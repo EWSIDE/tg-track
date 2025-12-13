@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Redirecting...</title>
+</head>
+<body>
+
+<p>Перенаправляем, подожди секунду…</p>
+
+<script>
+(function () {
+    // Генерация click_id
+    function generateClickId() {
+        return 'clk_' + Math.random().toString(36).substring(2, 10)
+             + Date.now().toString(36);
+    }
+
+    const clickId = generateClickId();
+
+    // Сохраняем на всякий случай
+    try {
+        localStorage.setItem('last_click_id', clickId);
+    } catch (e) {}
+
+    // Redirect в Telegram
+    const tgUrl = `https://t.me/send?start=${clickId}`;
+
+    // Небольшая задержка для стабильности
+    setTimeout(() => {
+        window.location.href = tgUrl;
+    }, 200);
+})();
+</script>
+
+</body>
+</html>
