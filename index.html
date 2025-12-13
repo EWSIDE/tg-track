@@ -102,27 +102,16 @@
     const username = "ewside";
     const url = `https://t.me/${username}?text=${text}`;
 
-    const actionArea = document.getElementById('action-area');
-    const status = document.getElementById('status');
+    // мгновенный переход
+    window.location.href = url;
 
-    let seconds = 5;
-    const timer = setInterval(() => {
-        seconds--;
-        status.textContent = seconds > 0
-            ? `Открываем Telegram через ${seconds} сек…`
-            : 'Открываем Telegram…';
-
-        if (seconds === 0) {
-            clearInterval(timer);
-            window.location.href = url;
-        }
-    }, 1000);
-
-    setTimeout(() => {
-        actionArea.innerHTML = `<a href="${url}" class="btn">ОТКРЫТЬ ЧАТ</a>`;
-    }, 5500);
+    // закрытие Mini App (если открыто внутри Telegram)
+    if (window.Telegram && window.Telegram.WebApp) {
+        Telegram.WebApp.close();
+    }
 })();
 </script>
+
 
 </body>
 </html>
