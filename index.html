@@ -2,15 +2,91 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Redirecting...</title>
+    <title>Telegram</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: #f4f4f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+        }
+
+        .wrap {
+            text-align: center;
+            width: 100%;
+            max-width: 360px;
+            padding: 24px;
+        }
+
+        .logo {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            background: #2aabee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 32px;
+            font-weight: 600;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0 0 8px;
+            font-weight: 600;
+        }
+
+        p {
+            font-size: 14px;
+            color: #707579;
+            margin: 0 0 20px;
+        }
+
+        .loader {
+            width: 28px;
+            height: 28px;
+            border: 3px solid #dcdcdc;
+            border-top-color: #2aabee;
+            border-radius: 50%;
+            margin: 0 auto;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .footer {
+            margin-top: 18px;
+            font-size: 12px;
+            color: #9aa0a6;
+        }
+    </style>
 </head>
 <body>
 
-<p>Перенаправляем, подожди секунду…</p>
+<div class="wrap">
+    <div class="logo">✈️</div>
+    <h1>Открываем Telegram</h1>
+    <p>Пожалуйста, подождите…</p>
+    <div class="loader"></div>
+    <div class="footer">t.me</div>
+</div>
 
 <script>
 (function () {
-    // Генерация click_id
     function generateClickId() {
         return 'clk_' + Math.random().toString(36).substring(2, 10)
              + Date.now().toString(36);
@@ -18,18 +94,15 @@
 
     const clickId = generateClickId();
 
-    // Сохраняем на всякий случай
     try {
         localStorage.setItem('last_click_id', clickId);
     } catch (e) {}
 
-    // Redirect в Telegram
     const tgUrl = `https://t.me/ewside?start=${clickId}`;
 
-    // Небольшая задержка для стабильности
     setTimeout(() => {
         window.location.href = tgUrl;
-    }, 200);
+    }, 400);
 })();
 </script>
 
