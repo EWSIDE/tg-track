@@ -117,16 +117,17 @@
     const username = "ewside";
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
+    // Для мобильных используем tg://resolve, для ПК — веб-ссылку
     const tgUrl = isMobile 
-        ? `tg://resolve?domain=${username}&text=${text}`
+        ? `tg://resolve?domain=${username}&text=${text}` 
         : `https://t.me/${username}?text=${text}`;
 
     const actionArea = document.getElementById('action-area');
     
-    // *** ИЗМЕНЕНИЕ: Убрана задержка (600 мс) для попытки немедленного автоперехода. ***
-    window.location.href = tgUrl; 
+    // Пытаемся сразу открыть Telegram
+    window.location.href = tgUrl;
 
-    // Добавляем запасную кнопку через 2 секунды, если автоматический переход не сработал.
+    // Запасная кнопка через 2 секунды
     setTimeout(() => {
         actionArea.innerHTML = `<a href="${tgUrl}" class="btn">ОТКРЫТЬ ЧАТ</a>`;
     }, 2000);
