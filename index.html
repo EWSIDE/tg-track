@@ -2,135 +2,45 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Telegram: Contact</title>
+    <title>Telegram</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <style>
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-        }
-
-        body { 
-            height: 100vh; 
-            background: #ffffff; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            color: #222;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .container { 
-            text-align: center; 
-            width: 100%; 
-            max-width: 400px; 
-            padding: 20px;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .tg-logo { 
-            width: 120px; 
-            height: 120px; 
-            margin: 0 auto 25px; 
-            object-fit: contain;
-        }
-
-        h1 { 
-            font-size: 24px; 
-            margin-bottom: 12px; 
-            font-weight: 500; 
-        }
-
-        p { 
-            font-size: 16px; 
-            line-height: 1.5;
-            color: #707579; 
-            margin-bottom: 32px; 
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 12px 32px;
-            background-color: #33a0e5;
-            color: white;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 500;
-            font-size: 15px;
-            transition: background 0.2s;
-            margin-bottom: 24px;
-        }
-
-        .btn:hover {
-            background-color: #2ea1e8;
-        }
-
-        .loader { 
-            width: 24px; 
-            height: 24px; 
-            border: 2px solid #f4f4f5; 
-            border-top-color: #33a0e5; 
-            border-radius: 50%; 
-            margin: 0 auto; 
-            animation: spin 0.8s linear infinite; 
-        }
-
-        @keyframes spin { 
-            to { transform: rotate(360deg); } 
-        }
-
-        .footer { 
-            margin-top: 40px; 
-            font-size: 14px; 
-            color: #33a0e5;
-            text-decoration: none;
-            font-weight: 500;
-        }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { margin:0; height:100vh; background:#f4f4f5; display:flex; align-items:center; justify-content:center; color:#000; }
+        .wrap { text-align:center; width:100%; max-width:360px; padding:24px; }
+        .logo { width:64px; height:64px; margin:0 auto 16px; border-radius:50%; background:#2aabee; display:flex; align-items:center; justify-content:center; color:#fff; font-size:32px; font-weight:600; }
+        h1 { font-size:18px; margin:0 0 8px; font-weight:600; }
+        p { font-size:14px; color:#707579; margin:0 0 20px; }
+        .loader { width:28px; height:28px; border:3px solid #dcdcdc; border-top-color:#2aabee; border-radius:50%; margin:0 auto; animation:spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .footer { margin-top:18px; font-size:12px; color:#9aa0a6; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <img src="Logo.png" alt="Telegram Logo" class="tg-logo">
-
+<div class="wrap">
+    <div class="logo">✈️</div>
     <h1>Открываем Telegram</h1>
-    <p>Подождите, мы перенаправляем вас в чат с администратором...</p>
-    
-    <div id="action-area">
-        <div class="loader"></div>
-    </div>
-
-    <a href="https://t.me/ewside" class="footer">t.me/ewside</a>
+    <p>Пожалуйста, подождите…</p>
+    <div class="loader"></div>
+    <div class="footer">t.me</div>
 </div>
 
 <script>
 (function () {
     const text = encodeURIComponent("Здравствуйте! Я из канала LIGHT по поводу задания на платформе Яндекс.Карты");
     const username = "ewside";
+
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    // Для мобильных используем tg://resolve, для ПК — веб-ссылку
     const tgUrl = isMobile 
-        ? `tg://resolve?domain=${username}&text=${text}` 
-        : `https://t.me/${username}?text=${text}`;
+        ? `https://t.me/${username}?text=${text}`      // мобильные — через веб-ссылку
+        : `tg://resolve?domain=${username}&text=${text}`; // десктоп — tg://
 
-    const actionArea = document.getElementById('action-area');
-    
-    // Пытаемся сразу открыть Telegram
-    window.location.href = tgUrl;
-
-    // Запасная кнопка через 2 секунды
     setTimeout(() => {
-        actionArea.innerHTML = `<a href="${tgUrl}" class="btn">ОТКРЫТЬ ЧАТ</a>`;
-    }, 2000);
+        window.location.href = tgUrl;
+    }, 400);
 })();
 </script>
 
