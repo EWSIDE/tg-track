@@ -421,7 +421,7 @@
         // ============================================
         
         // ВАЖНО: Замените на ваш реальный домен TimeWeb
-        const BACKEND_URL = 'https://5-129-200-89.nip.io'; // Используйте ваш IP и порт
+        const BACKEND_URL = 'http://5-129-200-89.nip.io:8005'; // Используйте ваш IP и порт
         const API_ENDPOINTS = {
             track: `${BACKEND_URL}/track`,
             apiTrack: `${BACKEND_URL}/api/track`,
@@ -771,7 +771,11 @@
                         setTimeout(() => {
                             if (data.redirect_url) {
                                 console.log("Redirecting to:", data.redirect_url);
-                                tg.openTelegramLink(data.redirect_url);
+                                const username = data.admin_username?.replace('@', '');
+                                const text = `Здравствуйте! Я по поводу задания на ${platform}`;
+                                const url = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
+
+                                tg.openTelegramLink(url);
                             } else {
                                 tg.openTelegramLink('tg://resolve?domain=shardlightspace_bot');
                             }
@@ -786,7 +790,11 @@
                         // Редирект через 2 секунды
                         setTimeout(() => {
                             if (data.redirect_url) {
-                                tg.openTelegramLink(data.redirect_url);
+                                const username = data.admin_username?.replace('@', '');
+                                const text = `Здравствуйте! Я по поводу задания на ${platform}`;
+                                const url = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
+
+                                tg.openTelegramLink(url);
                             } else {
                                 tg.openTelegramLink('tg://resolve?domain=shardlightspace_bot');
                             }
