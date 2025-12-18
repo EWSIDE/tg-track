@@ -136,6 +136,12 @@
             border: 1px solid rgba(0,0,0,0.1);
         }
         
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
         .status-message {
             padding: 15px;
             border-radius: 12px;
@@ -200,35 +206,9 @@
             margin-top: 20px;
             font-size: 12px;
             color: var(--tg-theme-hint-color);
-            display: none;
-        }
-        
-        .theme-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .theme-button {
-            flex: 1;
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid rgba(0,0,0,0.1);
-            background: var(--tg-theme-secondary-bg-color);
-            color: var(--tg-theme-text-color);
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-        
-        .theme-button:hover {
-            opacity: 0.8;
-        }
-        
-        .theme-button.active {
-            background: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border-color: var(--tg-theme-button-color);
+            display: block; /* Всегда показываем для отладки */
+            white-space: pre-wrap;
+            word-break: break-all;
         }
         
         /* Стили для разных цветовых тем */
@@ -271,14 +251,6 @@
             --tg-theme-button-text-color: #ffffff;
             --tg-theme-secondary-bg-color: #e9d8fd;
         }
-        
-        /* Адаптация для разных цветовых схем */
-        @media (prefers-color-scheme: dark) {
-            body:not(.theme-light):not(.theme-blue):not(.theme-purple) {
-                --tg-theme-bg-color: #0f0f0f;
-                --tg-theme-text-color: #ffffff;
-            }
-        }
     </style>
 </head>
 <body class="theme-light">
@@ -286,29 +258,25 @@
         <div class="header">
             <div class="logo">S</div>
             <h1>Shard Tasks</h1>
-            <p class="subtitle">Отклик на задание</p>
-        </div>
-        
-        <!-- Контроль темы (для отладки) -->
-        <div class="theme-controls">
-            <button class="theme-button active" onclick="changeTheme('light')">Светлая</button>
-            <button class="theme-button" onclick="changeTheme('dark')">Темная</button>
-            <button class="theme-button" onclick="changeTheme('blue')">Синяя</button>
-            <button class="theme-button" onclick="changeTheme('purple')">Фиолетовая</button>
+            <p class="subtitle" id="subtitle">Отклик на задание</p>
         </div>
         
         <div class="info-card">
             <div class="info-row">
                 <span class="info-label">ID задания:</span>
-                <span class="info-value" id="post-id">...</span>
+                <span class="info-value" id="post-id">Не указан</span>
             </div>
             <div class="info-row">
                 <span class="info-label">Администратор:</span>
-                <span class="info-value" id="admin-info">...</span>
+                <span class="info-value" id="admin-info">Не указан</span>
             </div>
             <div class="info-row">
                 <span class="info-label">Ваш ID:</span>
-                <span class="info-value" id="user-id">...</span>
+                <span class="info-value" id="user-id">Аноним</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Статус:</span>
+                <span class="info-value" id="status">Ожидание данных</span>
             </div>
         </div>
         
@@ -321,12 +289,12 @@
             <div>Отслеживаем ваш отклик...</div>
         </div>
         
-        <button class="button" id="track-button" onclick="handleClick()">
-            ✅ Подтвердить отклик
+        <button class="button" id="track-button" onclick="handleClick()" disabled>
+            ✅ Откликнуться на задание
         </button>
         
         <button class="button secondary" onclick="openSupport()">
-            💬 Поддержка
+            💬 Написать администратору
         </button>
         
         <button class="button theme-toggle" onclick="syncWithTelegramTheme()">
@@ -340,8 +308,8 @@
         
         <!-- Отладочная информация (для разработки) -->
         <div class="debug-info" id="debug-info">
-            <div><strong>Debug Info:</strong></div>
-            <div id="debug-content"></div>
+            <div><strong>Отладочная информация:</strong></div>
+            <div id="debug-content">Загрузка данных...</div>
         </div>
     </div>
 
@@ -349,13 +317,104 @@
         // Инициализация Telegram Web App
         const tg = window.Telegram.WebApp;
         
+        // Глобальные переменные
+        let postId = null;
+        let adminId = null;
+        let adminUsername = null;
+        let ref = null;
+        let platform = 'tg';
+        let tgUserId = null;
+        let tgUser = null;
+        
+        // Функция для парсинга параметров из Telegram
+        function parseTelegramParams() {
+            let parsedParams = {};
+            
+            // Способ 1: Параметр из URL (для прямой ссылки)
+            const urlParams = new URLSearchParams(window.location.search);
+            const startapp = urlParams.get('startapp');
+            
+            // Способ 2: Параметр из Telegram Web App (основной способ)
+            const startParam = tg.initDataUnsafe?.start_param;
+            
+            // Способ 3: tgWebAppStartParam из initDataUnsafe
+            const webAppStartParam = tg.initDataUnsafe?.tgWebAppStartParam;
+            
+            console.log('Debug params:', {
+                urlStartapp: startapp,
+                startParam: startParam,
+                webAppStartParam: webAppStartParam,
+                initDataUnsafe: tg.initDataUnsafe
+            });
+            
+            // Приоритет 1: tgWebAppStartParam (видимо это основной параметр)
+            let paramToParse = webAppStartParam || startParam || startapp;
+            
+            if (paramToParse) {
+                // Убираем возможный префикс "?"
+                if (paramToParse.startsWith('?')) {
+                    paramToParse = paramToParse.substring(1);
+                }
+                
+                // Убираем "tgWebAppStartParam=" если есть
+                if (paramToParse.includes('tgWebAppStartParam=')) {
+                    paramToParse = paramToParse.split('tgWebAppStartParam=')[1];
+                }
+                
+                console.log('Parsing param:', paramToParse);
+                
+                // Парсим в формате: postid_adminid_ref_platform
+                const parts = paramToParse.split('_');
+                
+                if (parts.length >= 2) {
+                    try {
+                        postId = parseInt(parts[0]);
+                        adminId = parseInt(parts[1]);
+                        
+                        if (parts.length > 2) {
+                            ref = parts[2];
+                        }
+                        
+                        if (parts.length > 3) {
+                            platform = parts[3];
+                        }
+                        
+                        parsedParams = {
+                            post_id: postId,
+                            admin_id: adminId,
+                            ref: ref,
+                            platform: platform,
+                            raw_param: paramToParse
+                        };
+                        
+                        console.log('Successfully parsed params:', parsedParams);
+                    } catch (error) {
+                        console.error('Error parsing params:', error);
+                        showStatus('Ошибка парсинга параметров', 'error');
+                    }
+                } else {
+                    console.warn('Invalid param format, expected: postid_adminid_ref_platform');
+                    showStatus('Неверный формат параметров', 'error');
+                }
+            } else {
+                console.warn('No start parameters found');
+                showStatus('Ссылка не содержит данных задания', 'error');
+            }
+            
+            // Получаем данные пользователя
+            if (tg.initDataUnsafe?.user) {
+                tgUser = tg.initDataUnsafe.user;
+                tgUserId = tgUser.id.toString();
+            }
+            
+            return parsedParams;
+        }
+        
         // Функция для синхронизации темы с Telegram
         function syncTelegramTheme() {
-            // Используем тему Telegram, если доступна
             const themeParams = tg.themeParams;
             
             if (themeParams && Object.keys(themeParams).length > 0) {
-                // Обновляем CSS переменные на основе темы Telegram
                 document.documentElement.style.setProperty('--tg-theme-bg-color', themeParams.bg_color || '#ffffff');
                 document.documentElement.style.setProperty('--tg-theme-text-color', themeParams.text_color || '#000000');
                 document.documentElement.style.setProperty('--tg-theme-hint-color', themeParams.hint_color || '#999999');
@@ -364,10 +423,7 @@
                 document.documentElement.style.setProperty('--tg-theme-button-text-color', themeParams.button_text_color || '#ffffff');
                 document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', themeParams.secondary_bg_color || '#f1f1f1');
                 
-                // Устанавливаем цвет хедера на основе фона
                 setTelegramHeaderColor(themeParams.bg_color);
-                
-                console.log('Telegram theme synchronized:', themeParams);
             }
         }
         
@@ -375,16 +431,11 @@
         function setTelegramHeaderColor(color) {
             if (!color) return;
             
-            // Преобразуем цвет в формат для Telegram
             let headerColor = color;
             
-            // Если это HEX цвет
             if (color.startsWith('#')) {
                 headerColor = color;
-            } 
-            // Если это RGB/RGBA
-            else if (color.startsWith('rgb')) {
-                // Упрощенное преобразование RGB в HEX
+            } else if (color.startsWith('rgb')) {
                 const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
                 if (match) {
                     const r = parseInt(match[1]);
@@ -394,107 +445,18 @@
                 }
             }
             
-            // Устанавливаем цвет хедера
             try {
                 tg.setHeaderColor(headerColor);
-                console.log('Header color set to:', headerColor);
-            } catch (error) {
-                console.error('Error setting header color:', error);
-            }
-            
-            // Также устанавливаем цвет фона
-            try {
                 tg.setBackgroundColor(headerColor);
             } catch (error) {
-                console.error('Error setting background color:', error);
+                console.error('Error setting colors:', error);
             }
-        }
-        
-        // Функция для смены темы вручную
-        function changeTheme(themeName) {
-            // Удаляем все классы тем
-            document.body.classList.remove('theme-light', 'theme-dark', 'theme-blue', 'theme-purple');
-            
-            // Добавляем выбранную тему
-            document.body.classList.add(`theme-${themeName}`);
-            
-            // Обновляем активную кнопку
-            document.querySelectorAll('.theme-button').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.textContent.toLowerCase().includes(themeName)) {
-                    btn.classList.add('active');
-                }
-            });
-            
-            // Устанавливаем цвет хедера в зависимости от темы
-            const themeColors = {
-                light: '#ffffff',
-                dark: '#0f0f0f',
-                blue: '#e8f4fc',
-                purple: '#f5f0ff'
-            };
-            
-            setTelegramHeaderColor(themeColors[themeName] || themeColors.light);
         }
         
         // Функция для синхронизации с темой Telegram
         function syncWithTelegramTheme() {
             syncTelegramTheme();
             showStatus('Тема синхронизирована с Telegram', 'success');
-        }
-        
-        // Параметры из startapp
-        const urlParams = new URLSearchParams(window.location.search);
-        const startapp = urlParams.get('startapp');
-        
-        let params = {};
-        let postId = null;
-        let adminId = null;
-        let adminUsername = null;
-        let ref = null;
-        
-        // Парсим параметры startapp
-        if (startapp) {
-            // Новый формат: postid_adminid_ref_platform
-            const parts = startapp.split('_');
-            if (parts.length >= 2) {
-                try {
-                    postId = parseInt(parts[0]);
-                    adminId = parseInt(parts[1]);
-                    ref = parts.length > 2 ? parts[2] : null;
-                    
-                    params = {
-                        post_id: postId,
-                        admin_id: adminId,
-                        ref: ref || 'telegram_mini_app'
-                    };
-                } catch (error) {
-                    console.error('Error parsing startapp:', error);
-                }
-            } else {
-                // Старый формат через параметры
-                const searchParams = new URLSearchParams(startapp);
-                postId = searchParams.get('post_id');
-                adminId = searchParams.get('admin_id');
-                adminUsername = searchParams.get('admin_username');
-                ref = searchParams.get('ref');
-                
-                params = {
-                    post_id: postId,
-                    admin_id: adminId,
-                    admin_username: adminUsername,
-                    ref: ref || 'telegram_mini_app'
-                };
-            }
-        }
-        
-        // Получаем данные пользователя из Telegram
-        let tgUser = null;
-        let tgUserId = null;
-        
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            tgUser = tg.initDataUnsafe.user;
-            tgUserId = tgUser.id.toString();
         }
         
         // Инициализация интерфейса
@@ -506,44 +468,78 @@
             // Синхронизируем тему с Telegram
             syncTelegramTheme();
             
-            // Обновляем информацию на странице
-            updateUI();
+            // Парсим параметры
+            const params = parseTelegramParams();
+            
+            // Обновляем UI
+            updateUI(params);
+            
+            // Обновляем отладочную информацию
+            updateDebugInfo(params);
             
             // Обработчик изменения темы Telegram
             tg.onEvent('themeChanged', syncTelegramTheme);
-            
-            // Показываем отладочную информацию в dev режиме
-            if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
-                document.getElementById('debug-info').style.display = 'block';
-                document.getElementById('debug-content').textContent = 
-                    `Start Param: ${tg.initDataUnsafe.start_param}\n` +
-                    `User ID: ${tgUserId}\n` +
-                    `Post ID: ${postId}\n` +
-                    `Admin ID: ${adminId}\n` +
-                    `Theme Params: ${JSON.stringify(tg.themeParams, null, 2)}`;
-            }
         });
         
-        function updateUI() {
-            // Обновляем информацию на странице
-            document.getElementById('post-id').textContent = postId || 'Не указан';
-            document.getElementById('admin-info').textContent = adminUsername ? `@${adminUsername}` : `ID: ${adminId}`;
-            document.getElementById('user-id').textContent = tgUserId || 'Аноним';
+        function updateUI(params) {
+            const postIdElement = document.getElementById('post-id');
+            const adminInfoElement = document.getElementById('admin-info');
+            const userIdElement = document.getElementById('user-id');
+            const statusElement = document.getElementById('status');
+            const trackButton = document.getElementById('track-button');
+            const subtitleElement = document.getElementById('subtitle');
+            
+            if (postId && adminId) {
+                postIdElement.textContent = postId;
+                adminInfoElement.textContent = `ID: ${adminId}`;
+                statusElement.textContent = 'Готово к отклику';
+                trackButton.disabled = false;
+                subtitleElement.textContent = `Задание #${postId}`;
+            } else {
+                postIdElement.textContent = 'Не указан';
+                adminInfoElement.textContent = 'Не указан';
+                statusElement.textContent = 'Ожидание данных';
+                trackButton.disabled = true;
+                subtitleElement.textContent = 'Отклик на задание';
+            }
+            
+            userIdElement.textContent = tgUserId ? tgUserId : 'Аноним';
+        }
+        
+        function updateDebugInfo(params) {
+            const debugContent = document.getElementById('debug-content');
+            
+            debugContent.innerHTML = `
+StartApp: ${tg.initDataUnsafe?.tgWebAppStartParam || 'Нет данных'}
+Post ID: ${postId || 'null'}
+Admin ID: ${adminId || 'null'}
+Admin: ${adminUsername || 'null'}
+User ID: ${tgUserId || 'null'}
+Platform: ${tg.platform || 'unknown'}
+Version: ${tg.version || 'unknown'}
+Parsed Params: ${JSON.stringify(params, null, 2)}
+Init Data: ${JSON.stringify(tg.initDataUnsafe, null, 2)}
+            `;
         }
         
         async function handleClick() {
+            if (!postId || !adminId) {
+                showStatus('Недостаточно данных для отклика', 'error');
+                return;
+            }
+            
             const trackButton = document.getElementById('track-button');
             const loading = document.getElementById('loading');
             const statusMessage = document.getElementById('status-message');
             
             // Показываем загрузку
-            trackButton.style.display = 'none';
+            trackButton.disabled = true;
             loading.style.display = 'block';
             statusMessage.style.display = 'none';
             
             try {
-                // Формируем параметр startapp для нового бэкенда
-                const startappParam = `${postId}_${adminId}_${ref || 'tg'}_tg`;
+                // Формируем параметр startapp для бэкенда
+                const startappParam = `${postId}_${adminId}_${ref || 'web'}_tg`;
                 
                 // Отправляем запрос на бэкенд
                 const response = await fetch('https://5-129-200-89.nip.io/api/track', {
@@ -553,11 +549,11 @@
                     },
                     body: JSON.stringify({
                         startapp: startappParam,
-                        post_id: parseInt(postId),
-                        admin_id: parseInt(adminId),
+                        post_id: postId,
+                        admin_id: adminId,
                         tg_user_id: tgUserId,
                         ref: ref || 'telegram_mini_app',
-                        platform: 'tg',
+                        platform: platform,
                         source: 'mini_app',
                         user_data: tgUser ? {
                             id: tgUser.id,
@@ -576,10 +572,8 @@
                 
                 if (data.success) {
                     if (data.click_counted) {
-                        // Успешно: клик засчитан
                         showStatus('Успешно! Ваш отклик засчитан. Перенаправляем...', 'success');
                         
-                        // Редирект на администратора через 2 секунды
                         setTimeout(() => {
                             if (data.redirect_url) {
                                 tg.openTelegramLink(data.redirect_url);
@@ -588,10 +582,8 @@
                             }
                         }, 2000);
                     } else {
-                        // Клик уже был
                         showStatus('Вы уже откликались на это задание. Перенаправляем...', 'warning');
                         
-                        // Все равно редиректим через 3 секунды
                         setTimeout(() => {
                             if (data.redirect_url) {
                                 tg.openTelegramLink(data.redirect_url);
@@ -601,9 +593,8 @@
                         }, 3000);
                     }
                 } else {
-                    // Ошибка
                     showStatus('Ошибка при обработке запроса', 'error');
-                    trackButton.style.display = 'block';
+                    trackButton.disabled = false;
                 }
                 
             } catch (error) {
@@ -611,7 +602,7 @@
                 loading.style.display = 'none';
                 
                 showStatus('Ошибка соединения. Попробуйте позже.', 'error');
-                trackButton.style.display = 'block';
+                trackButton.disabled = false;
                 
                 // Пробуем редирект на всякий случай
                 setTimeout(() => {
@@ -646,14 +637,6 @@
         
         function openSupport() {
             tg.openTelegramLink('https://t.me/shardhelp_bot');
-        }
-        
-        // Автоматически запускаем обработку если есть параметры
-        if (postId && adminId && tgUserId) {
-            // Можно включить авто-отслеживание:
-            // setTimeout(handleClick, 1000);
-        } else {
-            showStatus('Необходимые параметры отсутствуют', 'error');
         }
     </script>
 </body>
