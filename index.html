@@ -393,10 +393,6 @@
             <button class="button" id="track-button" onclick="handleClick()" disabled>
                 <i class="fas fa-check-circle"></i> Откликнуться на задание
             </button>
-            
-            <button class="button secondary" id="contact-button" onclick="openSupport()">
-                <i class="fas fa-comments"></i> Написать администратору
-            </button>
         </div>
         
         <div class="footer">
@@ -783,7 +779,7 @@
                     }
                 } else {
                     // Ошибка от бэкенда
-                    showStatus(`❌ Ошибка: ${data.error || 'Неизвестная ошибка'}`, 'error');
+                    showStatus(`Ошибка: ${data.error || 'Неизвестная ошибка'}`, 'error');
                     trackButton.innerHTML = '<i class="fas fa-redo"></i> Попробовать снова';
                     trackButton.disabled = false;
                     hasClicked = false;
@@ -793,7 +789,7 @@
                 console.error("Ошибка при отправке запроса:", error);
                 loading.style.display = 'none';
                 
-                showStatus('❌ Ошибка соединения с сервером', 'error');
+                showStatus('Ошибка соединения с сервером', 'error');
                 trackButton.innerHTML = '<i class="fas fa-redo"></i> Попробовать снова';
                 trackButton.disabled = false;
                 hasClicked = false;
