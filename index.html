@@ -399,10 +399,10 @@
             <p><i class="fas fa-shield-alt"></i> Каждый пользователь может откликнуться только один раз</p>
             <p style="margin-top: 8px;">
                 <i class="fas fa-robot"></i> Powered by TraffPost • 
-                <a href="https://t.me/shardhelp_bot" target="_blank">Техподдержка</a>
+                <a href="https://t.me/shardhelp_bot" target="_blank" onclick="openSupport(); return false;">Техподдержка</a>
             </p>
             <p style="margin-top: 5px; font-size: 11px; opacity: 0.7;">
-                © 2025 TraffPost • v1.1.0
+                © 2025 TraffPost • v2.0.0
             </p>
         </div>
         
@@ -421,7 +421,7 @@
         // ============================================
         
         // ВАЖНО: Замените на ваш реальный домен TimeWeb
-        const BACKEND_URL = 'https://5-129-200-89.nip.io';
+        const BACKEND_URL = 'http://5-129-200-89.nip.io:8005'; // Используйте ваш IP и порт
         const API_ENDPOINTS = {
             track: `${BACKEND_URL}/track`,
             apiTrack: `${BACKEND_URL}/api/track`,
@@ -474,6 +474,9 @@
                 if (tg.initDataUnsafe?.user) {
                     tgUser = tg.initDataUnsafe.user;
                     tgUserId = tgUser.id.toString();
+                    console.log("Telegram user data:", tgUser);
+                } else {
+                    console.warn("No Telegram user data available");
                 }
                 
                 return true;
@@ -518,6 +521,7 @@
             
             if (!startParam) {
                 console.warn("Параметры не найдены!");
+                showStatus('Ошибка: Не указаны параметры задания', 'error');
                 return null;
             }
             
@@ -554,6 +558,7 @@
                     
                 } catch (error) {
                     console.error("Ошибка парсинга:", error);
+                    showStatus('Ошибка: Неверный формат параметров', 'error');
                     return {
                         parsed_successfully: false,
                         error: error.message
@@ -561,6 +566,7 @@
                 }
             } else {
                 console.warn("Неверный формат параметра");
+                showStatus('Ошибка: Неверный формат параметров', 'error');
                 return {
                     parsed_successfully: false,
                     error: "Неверный формат параметра"
@@ -606,6 +612,7 @@
                 
                 // Активируем кнопку
                 trackButton.disabled = false;
+                trackButton.innerHTML = '<i class="fas fa-check-circle"></i> Откликнуться на задание';
                 
                 // Обновляем статус
                 taskStatusElement.innerHTML = '<span class="badge badge-success">Готово к отклику</span>';
@@ -615,7 +622,6 @@
             } else {
                 // Показываем ошибку
                 initialStatus.style.display = 'none';
-                showStatus('Ошибка: Не удалось загрузить данные задания', 'error');
                 taskStatusElement.innerHTML = '<span class="badge badge-warning">Ошибка загрузки</span>';
                 trackButton.disabled = true;
                 updateDebugInfo();
@@ -633,6 +639,8 @@
                 "Platform": platform,
                 "User ID": tgUserId,
                 "Username": tgUser?.username || 'Нет',
+                "First Name": tgUser?.first_name || 'Нет',
+                "Last Name": tgUser?.last_name || 'Нет',
                 "Telegram Platform": tg.platform,
                 "Telegram Version": tg.version,
                 "Parsed Params": parsedParams,
@@ -706,6 +714,7 @@
                     timestamp: new Date().toISOString()
                 };
                 
+                // ДОБАВЛЯЕМ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ДЛЯ ДИНАМИЧЕСКОГО ОТОБРАЖЕНИЯ
                 if (tgUser) {
                     requestData.user_data = {
                         id: tgUser.id,
@@ -715,6 +724,7 @@
                         language_code: tgUser.language_code,
                         is_premium: tgUser.is_premium || false
                     };
+                    console.log("User data added to request:", requestData.user_data);
                 }
                 
                 console.log("Данные запроса:", requestData);
@@ -731,12 +741,18 @@
                 
                 console.log("Статус ответа:", response.status);
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                let data;
+                try {
+                    data = await response.json();
+                    console.log("Ответ от бэкенда:", data);
+                } catch (jsonError) {
+                    console.error("Ошибка парсинга JSON:", jsonError);
+                    throw new Error('Ошибка формата ответа от сервера');
                 }
                 
-                const data = await response.json();
-                console.log("Ответ от бэкенда:", data);
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
                 
                 // Обрабатываем ответ
                 loading.style.display = 'none';
@@ -744,38 +760,44 @@
                 if (data.success) {
                     const taskStatusElement = document.getElementById('task-status');
                     
-                    if (data.click_counted) {
-                        // Успешный отклик
-                        showStatus('Успешно! Ваш отклик засчитан. Перенаправляем...', 'success');
+                    if (data.click_counted && data.is_unique) {
+                        // Успешный уникальный отклик
+                        showStatus('✅ Успешно! Ваш отклик засчитан. Перенаправляем...', 'success');
                         taskStatusElement.innerHTML = '<span class="badge badge-success">Отклик принят</span>';
                         trackButton.innerHTML = '<i class="fas fa-check-double"></i> Отклик засчитан';
                         trackButton.classList.add('success');
+                        
+                        // Редирект через 1.5 секунды
+                        setTimeout(() => {
+                            if (data.redirect_url) {
+                                console.log("Redirecting to:", data.redirect_url);
+                                tg.openTelegramLink(data.redirect_url);
+                            } else {
+                                tg.openTelegramLink('tg://resolve?domain=shardlightspace_bot');
+                            }
+                        }, 1500);
+                        
+                    } else if (data.click_counted && !data.is_unique) {
+                        // Повторный отклик
+                        showStatus('⚠️ Вы уже откликались на это задание ранее. Перенаправляем...', 'warning');
+                        taskStatusElement.innerHTML = '<span class="badge badge-warning">Повторный отклик</span>';
+                        trackButton.innerHTML = '<i class="fas fa-redo"></i> Повторный отклик';
                         
                         // Редирект через 2 секунды
                         setTimeout(() => {
                             if (data.redirect_url) {
                                 tg.openTelegramLink(data.redirect_url);
                             } else {
-                                tg.openTelegramLink('https://t.me/shardlightspace_bot');
+                                tg.openTelegramLink('tg://resolve?domain=shardlightspace_bot');
                             }
                         }, 2000);
                         
                     } else {
-                        // Повторный отклик
-                        showStatus('⚠️ Вы уже откликались на это задание ранее', 'warning');
-                        taskStatusElement.innerHTML = '<span class="badge badge-warning">Повторный отклик</span>';
+                        // Клик не засчитан
+                        showStatus('Ошибка: Клик не засчитан', 'error');
                         trackButton.innerHTML = '<i class="fas fa-redo"></i> Попробовать снова';
                         trackButton.disabled = false;
                         hasClicked = false;
-                        
-                        // Редирект через 3 секунды
-                        setTimeout(() => {
-                            if (data.redirect_url) {
-                                tg.openTelegramLink(data.redirect_url);
-                            } else {
-                                tg.openTelegramLink('https://t.me/shardlightspace_bot');
-                            }
-                        }, 3000);
                     }
                 } else {
                     // Ошибка от бэкенда
@@ -796,8 +818,8 @@
                 
                 // Пробуем редирект на всякий случай
                 setTimeout(() => {
-                    tg.openTelegramLink('https://t.me/shardlightspace_bot');
-                }, 4000);
+                    tg.openTelegramLink('tg://resolve?domain=shardlightspace_bot');
+                }, 3000);
             }
         }
         
