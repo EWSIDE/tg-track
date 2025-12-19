@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TraffPost | Отклик на задание</title>
+    <title>Отклик на задание</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
             --tg-theme-bg-color: #ffffff;
@@ -16,13 +17,9 @@
             --tg-theme-button-text-color: #ffffff;
             --tg-theme-secondary-bg-color: #f1f1f1;
         }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--tg-theme-bg-color);
@@ -31,328 +28,291 @@
             padding: 20px;
             transition: background-color 0.3s ease;
         }
-        
+
+        /* ============================================
+           НОВЫЙ ВИЗУАЛ: FULLSCREEN PROGRESS OVERLAY
+           ============================================ */
+
+        #progress-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(1200px 700px at 20% 20%, rgba(42, 92, 255, .20), transparent 60%),
+                        radial-gradient(900px 600px at 80% 30%, rgba(0, 205, 255, .12), transparent 55%),
+                        linear-gradient(135deg, #0a1020, #0b1b33);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity .35s ease;
+        }
+
+        .progress-card {
+            width: min(560px, calc(100vw - 40px));
+            background: rgba(0, 0, 0, 0.82);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 22px;
+            padding: 22px 22px;
+            box-shadow: 0 28px 90px rgba(0,0,0,.65);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-card::before {
+            content: "";
+            position: absolute;
+            inset: -80px -120px auto auto;
+            width: 260px;
+            height: 260px;
+            background: radial-gradient(circle at 30% 30%, rgba(42, 92, 255, .35), transparent 60%);
+            transform: rotate(18deg);
+            pointer-events: none;
+        }
+
+        .progress-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .progress-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: .2px;
+            color: rgba(255,255,255,.94);
+        }
+
+        .progress-icons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: .95;
+        }
+
+        .progress-icons .bubble {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(42,92,255,.2);
+            border: 1px solid rgba(42,92,255,.35);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,.9);
+            font-size: 14px;
+        }
+
+        .steps {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 12px 0 14px;
+            padding: 8px 2px;
+        }
+
+        .step {
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            border: 2px solid rgba(42,92,255,.7);
+            opacity: .35;
+            position: relative;
+            flex: 0 0 auto;
+        }
+
+        .step.done {
+            background: rgba(42,92,255,1);
+            opacity: 1;
+        }
+
+        .step.done::after {
+            content: "✓";
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-size: 12px;
+            font-weight: 800;
+            color: #071126;
+        }
+
+        .step.active {
+            opacity: 1;
+            background: rgba(42,92,255,1);
+            box-shadow: 0 0 0 0 rgba(42,92,255,.55);
+            animation: pulse 1.2s infinite ease-in-out;
+        }
+
+        .line {
+            flex: 1;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(42,92,255,.22);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .line.fill::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(42,92,255,.85);
+            transform: translateX(-100%);
+            animation: lineMove 1.2s infinite linear;
+        }
+
+        @keyframes pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(42,92,255,.55); transform: scale(1); }
+            55%  { box-shadow: 0 0 0 14px rgba(42,92,255,0); transform: scale(1.08); }
+            100% { box-shadow: 0 0 0 0 rgba(42,92,255,0); transform: scale(1); }
+        }
+
+        @keyframes lineMove {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-bottom {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .progress-text {
+            font-size: 15px;
+            color: rgba(255,255,255,.85);
+        }
+
+        .progress-count {
+            font-size: 13px;
+            color: rgba(255,255,255,.55);
+            white-space: nowrap;
+        }
+
+        .progress-sub {
+            margin-top: 10px;
+            font-size: 12px;
+            color: rgba(255,255,255,.45);
+            line-height: 1.35;
+        }
+
+        .progress-error {
+            margin-top: 10px;
+            font-size: 13px;
+            color: rgba(255, 120, 120, .95);
+            display: none;
+        }
+
+        /* ============================================
+           СТАРЫЙ UI (ОСТАВЛЕН ДЛЯ ФУНКЦИОНАЛА) — СКРЫТ
+           ============================================ */
         .container {
             max-width: 400px;
             margin: 0 auto;
+            display: none; /* <-- скрываем полностью визуально */
         }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-top: 10px;
-        }
-        
-        .logo {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            margin: 0 auto 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-        
-        h1 {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
-        
-        .subtitle {
-            color: var(--tg-theme-hint-color);
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
-        
-        .info-card {
-            background: rgba(51, 144, 236, 0.08);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(51, 144, 236, 0.15);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-        }
-        
-        .info-row:last-child {
-            margin-bottom: 0;
-            padding-bottom: 0;
-            border-bottom: none;
-        }
-        
-        .info-label {
-            color: var(--tg-theme-hint-color);
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .info-value {
-            font-weight: 600;
-            text-align: right;
-            font-size: 14px;
-        }
-        
-        .button {
-            width: 100%;
-            padding: 16px;
-            background: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none;
-            border-radius: 14px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 12px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 2px 8px rgba(51, 144, 236, 0.2);
-        }
-        
-        .button:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(51, 144, 236, 0.3);
-        }
-        
-        .button:active {
-            opacity: 0.8;
-            transform: translateY(0);
-            box-shadow: 0 1px 4px rgba(51, 144, 236, 0.2);
-        }
-        
-        .button.secondary {
-            background: #6c757d;
-            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.2);
-        }
-        
-        .button.success {
-            background: #28a745;
-            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
-        }
-        
-        .button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-        
-        .status-message {
-            padding: 16px;
-            border-radius: 14px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 14px;
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .status-success {
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-            border: 1px solid rgba(40, 167, 69, 0.2);
-        }
-        
-        .status-warning {
-            background: rgba(255, 193, 7, 0.1);
-            color: #ffc107;
-            border: 1px solid rgba(255, 193, 7, 0.2);
-        }
-        
-        .status-error {
-            background: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
-            border: 1px solid rgba(220, 53, 69, 0.2);
-        }
-        
-        .status-info {
-            background: rgba(51, 144, 236, 0.1);
-            color: #3390ec;
-            border: 1px solid rgba(51, 144, 236, 0.2);
-        }
-        
-        .loading {
-            text-align: center;
-            margin: 20px 0;
-            display: none;
-        }
-        
-        .loader {
-            border: 3px solid rgba(51, 144, 236, 0.2);
-            border-top: 3px solid var(--tg-theme-button-color);
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 12px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(0, 0, 0, 0.08);
-            color: var(--tg-theme-hint-color);
-            font-size: 12px;
-            line-height: 1.5;
-        }
-        
-        .footer a {
-            color: var(--tg-theme-link-color);
-            text-decoration: none;
-        }
-        
-        .footer a:hover {
-            text-decoration: underline;
-        }
-        
-        .action-buttons {
-            margin: 25px 0;
-        }
-        
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            margin: 20px 0;
-            padding: 15px;
-            background: var(--tg-theme-secondary-bg-color);
-            border-radius: 14px;
-            text-align: center;
-        }
-        
-        .stat-item {
-            flex: 1;
-        }
-        
-        .stat-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--tg-theme-button-color);
-        }
-        
-        .stat-label {
-            font-size: 12px;
-            color: var(--tg-theme-hint-color);
-            margin-top: 4px;
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-        
-        .badge-success {
-            background: rgba(40, 167, 69, 0.2);
-            color: #28a745;
-        }
-        
-        .badge-warning {
-            background: rgba(255, 193, 7, 0.2);
-            color: #ffc107;
-        }
-        
-        .badge-info {
-            background: rgba(51, 144, 236, 0.2);
-            color: #3390ec;
-        }
-        
-        .debug-info {
-            background: var(--tg-theme-secondary-bg-color);
-            padding: 12px;
-            border-radius: 12px;
-            margin-top: 20px;
-            font-size: 12px;
-            color: var(--tg-theme-hint-color);
-            display: block;
-            white-space: pre-wrap;
-            word-break: break-all;
-            font-family: monospace;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .debug-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        
-        .debug-toggle {
-            background: none;
-            border: none;
-            color: var(--tg-theme-link-color);
-            cursor: pointer;
-            font-size: 12px;
-        }
-        
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 10px;
-            }
-            
-            .logo {
-                width: 60px;
-                height: 60px;
-                font-size: 24px;
-            }
-            
-            h1 {
-                font-size: 22px;
-            }
-            
-            .button {
-                padding: 14px;
-                font-size: 15px;
-            }
-        }
+
+        /* Ниже — твой прежний CSS оставлен как был (на всякий случай),
+           но он не будет виден, т.к. container скрыт. */
+
+        .header { text-align: center; margin-bottom: 30px; padding-top: 10px; }
+        .logo { width: 70px; height: 70px; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        .logo img { width: 100%; height: 100%; object-fit: cover; }
+        h1 { font-size: 24px; margin-bottom: 8px; }
+        .subtitle { color: var(--tg-theme-hint-color); font-size: 14px; margin-bottom: 5px; }
+        .info-card { background: rgba(51, 144, 236, 0.08); border-radius: 16px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(51, 144, 236, 0.15); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.08); }
+        .info-row:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+        .info-label { color: var(--tg-theme-hint-color); font-size: 14px; display: flex; align-items: center; gap: 6px; }
+        .info-value { font-weight: 600; text-align: right; font-size: 14px; }
+        .button { width: 100%; padding: 16px; background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(51, 144, 236, 0.2); }
+        .button:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(51, 144, 236, 0.3); }
+        .button:active { opacity: 0.8; transform: translateY(0); box-shadow: 0 1px 4px rgba(51, 144, 236, 0.2); }
+        .button.secondary { background: #6c757d; box-shadow: 0 2px 8px rgba(108, 117, 125, 0.2); }
+        .button.success { background: #28a745; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2); }
+        .button:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+        .status-message { padding: 16px; border-radius: 14px; margin-bottom: 20px; text-align: center; font-size: 14px; display: none; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .status-success { background: rgba(40, 167, 69, 0.1); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.2); }
+        .status-warning { background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.2); }
+        .status-error { background: rgba(220, 53, 69, 0.1); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.2); }
+        .status-info { background: rgba(51, 144, 236, 0.1); color: #3390ec; border: 1px solid rgba(51, 144, 236, 0.2); }
+        .loading { text-align: center; margin: 20px 0; display: none; }
+        .loader { border: 3px solid rgba(51, 144, 236, 0.2); border-top: 3px solid var(--tg-theme-button-color); border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; margin: 0 auto 12px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(0, 0, 0, 0.08); color: var(--tg-theme-hint-color); font-size: 12px; line-height: 1.5; }
+        .footer a { color: var(--tg-theme-link-color); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        .action-buttons { margin: 25px 0; }
+
+        .debug-info { background: rgba(0, 0, 0, 0.03); padding: 10px 12px; border-radius: 10px; margin-top: 20px; font-size: 11px; color: #666; border: 1px solid rgba(0, 0, 0, 0.05); display: block; white-space: pre-wrap; word-break: break-all; font-family: 'Menlo', 'Monaco', 'Courier New', monospace; max-height: 150px; overflow-y: auto; opacity: 0.8; transition: all 0.3s ease; }
+        .debug-info:hover { opacity: 1; background: rgba(0, 0, 0, 0.05); }
+        .debug-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed rgba(0, 0, 0, 0.1); }
+        .debug-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #888; }
+        .debug-toggle { background: none; border: none; color: #888; cursor: pointer; font-size: 10px; padding: 2px 6px; border-radius: 4px; transition: all 0.2s; }
+        .debug-toggle:hover { background: rgba(0, 0, 0, 0.05); color: #666; }
+        .debug-content { line-height: 1.4; }
+        .debug-content strong { color: #444; font-weight: 600; }
+        .debug-line { margin-bottom: 4px; padding-left: 4px; border-left: 2px solid transparent; transition: all 0.2s; }
+        .debug-line:hover { border-left-color: #3390ec; background: rgba(51, 144, 236, 0.03); }
     </style>
 </head>
+
 <body>
+
+    <!-- ============================================
+         НОВЫЙ ВИЗУАЛ: АНИМАЦИЯ ПРОГРЕССА
+         ============================================ -->
+    <div id="progress-overlay">
+        <div class="progress-card">
+            <div class="progress-top">
+                <div class="progress-title">Recruiter</div>
+                <div class="progress-icons">
+                    <span class="bubble"><i class="fa-regular fa-envelope"></i></span>
+                    <span class="bubble"><i class="fa-regular fa-comment-dots"></i></span>
+                    <span class="bubble"><i class="fa-regular fa-note-sticky"></i></span>
+                </div>
+            </div>
+
+            <div class="steps" id="progress-steps" aria-label="progress">
+                <!-- шаги рисуются JS, чтобы удобно управлять -->
+            </div>
+
+            <div class="progress-bottom">
+                <div class="progress-text" id="progress-text">Инициализация…</div>
+                <div class="progress-count" id="progress-count">1 of 5</div>
+            </div>
+
+            <div class="progress-sub" id="progress-sub">
+                Пожалуйста, не закрывайте окно — идёт обработка отклика.
+            </div>
+
+            <div class="progress-error" id="progress-error"></div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         СТАРЫЙ UI: ОСТАВЛЕН ДЛЯ ФУНКЦИОНАЛА (СКРЫТ)
+         ============================================ -->
     <div class="container">
         <div class="header">
             <div class="logo">
-                <i class="fas fa-gem"></i>
+                <img src="Logo.png" alt="Logo" id="logo-image">
             </div>
-            <h1 id="page-title">TraffPost</h1>
+            <h1 id="page-title">Задание</h1>
             <p class="subtitle" id="subtitle">Отклик на задание</p>
         </div>
-        
+
         <div class="status-message status-info" id="initial-status">
             <i class="fas fa-sync-alt fa-spin"></i> Загружаем данные задания...
         </div>
-        
+
         <div class="info-card" id="task-info" style="display: none;">
             <div class="info-row">
                 <span class="info-label">
@@ -381,37 +341,37 @@
                 </span>
             </div>
         </div>
-        
+
         <div class="status-message" id="status-message"></div>
-        
+
         <div class="loading" id="loading">
             <div class="loader"></div>
             <div>Обрабатываем ваш отклик...</div>
         </div>
-        
+
         <div class="action-buttons">
             <button class="button" id="track-button" onclick="handleClick()" disabled>
                 <i class="fas fa-check-circle"></i> Откликнуться на задание
             </button>
         </div>
-        
+
         <div class="footer">
             <p><i class="fas fa-shield-alt"></i> Каждый пользователь может откликнуться только один раз</p>
             <p style="margin-top: 8px;">
-                <i class="fas fa-robot"></i> Powered by TraffPost • 
+                <i class="fas fa-robot"></i> Powered by TaskTracker •
                 <a href="https://t.me/shardhelp_bot" target="_blank" onclick="openSupport(); return false;">Техподдержка</a>
             </p>
             <p style="margin-top: 5px; font-size: 11px; opacity: 0.7;">
-                © 2025 TraffPost • v2.0.0
+                © 2025 TaskTracker • v2.0.0
             </p>
         </div>
-        
+
         <div class="debug-info" id="debug-info">
             <div class="debug-header">
-                <strong>Отладочная информация:</strong>
-                <button class="debug-toggle" onclick="toggleDebug()">Свернуть</button>
+                <span class="debug-title">Отладочная информация</span>
+                <button class="debug-toggle" onclick="toggleDebug()">Скрыть</button>
             </div>
-            <div id="debug-content">Загрузка данных...</div>
+            <div class="debug-content" id="debug-content"></div>
         </div>
     </div>
 
@@ -419,9 +379,7 @@
         // ============================================
         // КОНФИГУРАЦИЯ БЭКЕНДА
         // ============================================
-        
-        // ВАЖНО: Замените на ваш реальный домен TimeWeb
-        const BACKEND_URL = 'https://5-129-200-89.nip.io'; // Используйте ваш IP и порт
+        const BACKEND_URL = 'https://5-129-200-89.nip.io';
         const API_ENDPOINTS = {
             track: `${BACKEND_URL}/track`,
             apiTrack: `${BACKEND_URL}/api/track`,
@@ -429,11 +387,10 @@
             adminStats: `${BACKEND_URL}/admin`,
             health: `${BACKEND_URL}/health`
         };
-        
+
         // ============================================
         // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
         // ============================================
-        
         const tg = window.Telegram.WebApp;
         let postId = null;
         let adminId = null;
@@ -445,17 +402,86 @@
         let parsedParams = {};
         let hasClicked = false;
         let isDebugVisible = true;
-        
+
+        // ============================================
+        // ПРОГРЕСС-АНИМАЦИЯ (новый визуал)
+        // ============================================
+        const PROGRESS_TOTAL = 5;
+
+        function buildSteps() {
+            const stepsEl = document.getElementById('progress-steps');
+            stepsEl.innerHTML = '';
+            for (let i = 1; i <= PROGRESS_TOTAL; i++) {
+                const s = document.createElement('div');
+                s.className = 'step';
+                s.dataset.step = String(i);
+                stepsEl.appendChild(s);
+                if (i !== PROGRESS_TOTAL) {
+                    const line = document.createElement('div');
+                    line.className = 'line';
+                    stepsEl.appendChild(line);
+                }
+            }
+        }
+
+        function setProgress(step, text, subText) {
+            const textEl = document.getElementById('progress-text');
+            const countEl = document.getElementById('progress-count');
+            const subEl = document.getElementById('progress-sub');
+
+            textEl.textContent = text || '…';
+            countEl.textContent = `${Math.min(step, PROGRESS_TOTAL)} of ${PROGRESS_TOTAL}`;
+            if (typeof subText === 'string') subEl.textContent = subText;
+
+            const stepsEl = document.getElementById('progress-steps');
+            const children = Array.from(stepsEl.children);
+
+            // children содержит: step, line, step, line...
+            let currentStep = Math.max(1, Math.min(step, PROGRESS_TOTAL));
+
+            let stepIndex = 1;
+            for (let i = 0; i < children.length; i++) {
+                const el = children[i];
+
+                if (el.classList.contains('step')) {
+                    el.classList.remove('done', 'active');
+                    if (stepIndex < currentStep) el.classList.add('done');
+                    else if (stepIndex === currentStep) el.classList.add('active');
+                    stepIndex++;
+                }
+
+                if (el.classList.contains('line')) {
+                    // красивые "движущиеся" линии начиная с активного шага
+                    el.classList.remove('fill');
+                    const beforeStep = stepIndex - 1; // линия после шага beforeStep
+                    if (beforeStep === currentStep) el.classList.add('fill');
+                }
+            }
+        }
+
+        function showProgressError(msg) {
+            const err = document.getElementById('progress-error');
+            err.textContent = msg;
+            err.style.display = 'block';
+        }
+
+        function fadeOutOverlay() {
+            const overlay = document.getElementById('progress-overlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 380);
+        }
+
         // ============================================
         // ФУНКЦИИ ДЛЯ РАБОТЫ С ТЕЛЕГРАМ
         // ============================================
-        
         function initTelegram() {
             try {
                 tg.ready();
                 tg.expand();
                 tg.enableClosingConfirmation();
-                
+
                 // Настраиваем тему
                 if (tg.themeParams) {
                     document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
@@ -465,11 +491,11 @@
                     document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#3390ec');
                     document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
                     document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#f1f1f1');
-                    
+
                     tg.setHeaderColor(tg.themeParams.bg_color);
                     tg.setBackgroundColor(tg.themeParams.bg_color);
                 }
-                
+
                 // Получаем данные пользователя
                 if (tg.initDataUnsafe?.user) {
                     tgUser = tg.initDataUnsafe.user;
@@ -478,23 +504,22 @@
                 } else {
                     console.warn("No Telegram user data available");
                 }
-                
+
                 return true;
             } catch (error) {
                 console.error("Ошибка инициализации Telegram:", error);
                 return false;
             }
         }
-        
+
         // ============================================
         // ПАРСИНГ ПАРАМЕТРОВ
         // ============================================
-        
         function parseTelegramParams() {
             console.log("=== ПАРСИНГ ПАРАМЕТРОВ ===");
-            
+
             let startParam = null;
-            
+
             // 1. Пробуем получить параметр из Telegram
             if (tg.initDataUnsafe?.tgWebAppStartParam) {
                 startParam = tg.initDataUnsafe.tgWebAppStartParam;
@@ -503,13 +528,13 @@
                 startParam = tg.initDataUnsafe.start_param;
                 console.log("Параметр из start_param:", startParam);
             }
-            
+
             // 2. Пробуем получить из URL (для тестирования)
             if (!startParam) {
                 const urlParams = new URLSearchParams(window.location.search);
                 const testParam = urlParams.get('test');
                 const startapp = urlParams.get('startapp');
-                
+
                 if (testParam) {
                     startParam = testParam;
                     console.log("Параметр из URL (test):", startParam);
@@ -518,32 +543,33 @@
                     console.log("Параметр из URL (startapp):", startParam);
                 }
             }
-            
+
             if (!startParam) {
                 console.warn("Параметры не найдены!");
-                showStatus('Ошибка: Не указаны параметры задания', 'error');
+                // старый showStatus останется для логов, но сверху покажем нормальную ошибку
+                showProgressError('Ошибка: Не указаны параметры задания');
                 return null;
             }
-            
+
             // Очищаем параметр
             let cleanParam = startParam;
             if (cleanParam.startsWith('?')) cleanParam = cleanParam.substring(1);
             if (cleanParam.includes('tgWebAppStartParam=')) {
                 cleanParam = cleanParam.split('tgWebAppStartParam=')[1];
             }
-            
+
             console.log("Очищенный параметр:", cleanParam);
-            
+
             // Парсим формат: postid_adminid_ref_platform
             const parts = cleanParam.split('_');
-            
+
             if (parts.length >= 2) {
                 try {
                     postId = parseInt(parts[0]);
                     adminId = parseInt(parts[1]);
                     ref = parts.length > 2 ? parts[2] : null;
                     platform = parts.length > 3 ? parts[3] : 'tg';
-                    
+
                     parsedParams = {
                         post_id: postId,
                         admin_id: adminId,
@@ -552,13 +578,13 @@
                         raw_param: cleanParam,
                         parsed_successfully: true
                     };
-                    
+
                     console.log("Успешно распарсено:", parsedParams);
                     return parsedParams;
-                    
+
                 } catch (error) {
                     console.error("Ошибка парсинга:", error);
-                    showStatus('Ошибка: Неверный формат параметров', 'error');
+                    showProgressError('Ошибка: Неверный формат параметров');
                     return {
                         parsed_successfully: false,
                         error: error.message
@@ -566,18 +592,17 @@
                 }
             } else {
                 console.warn("Неверный формат параметра");
-                showStatus('Ошибка: Неверный формат параметров', 'error');
+                showProgressError('Ошибка: Неверный формат параметров');
                 return {
                     parsed_successfully: false,
                     error: "Неверный формат параметра"
                 };
             }
         }
-        
+
         // ============================================
-        // ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+        // ОБНОВЛЕНИЕ (старого) ИНТЕРФЕЙСА — оставлено
         // ============================================
-        
         function updateUI() {
             const postIdElement = document.getElementById('post-id');
             const adminInfoElement = document.getElementById('admin-info');
@@ -588,15 +613,14 @@
             const pageTitleElement = document.getElementById('page-title');
             const taskInfoCard = document.getElementById('task-info');
             const initialStatus = document.getElementById('initial-status');
-            
+
             if (parsedParams && parsedParams.parsed_successfully) {
-                // Показываем информацию о задании
                 initialStatus.style.display = 'none';
                 taskInfoCard.style.display = 'block';
-                
+
                 postIdElement.textContent = parsedParams.post_id;
                 adminInfoElement.textContent = `ID: ${parsedParams.admin_id}`;
-                
+
                 if (tgUser) {
                     userIdElement.textContent = tgUser.id;
                     if (tgUser.username) {
@@ -605,104 +629,99 @@
                 } else {
                     userIdElement.textContent = 'Гость';
                 }
-                
-                // Обновляем заголовки
+
                 subtitleElement.textContent = `Задание #${parsedParams.post_id}`;
                 pageTitleElement.textContent = `Задание #${parsedParams.post_id}`;
-                
-                // Активируем кнопку
+
                 trackButton.disabled = false;
                 trackButton.innerHTML = '<i class="fas fa-check-circle"></i> Откликнуться на задание';
-                
-                // Обновляем статус
+
                 taskStatusElement.innerHTML = '<span class="badge badge-success">Готово к отклику</span>';
-                
+
                 updateDebugInfo();
-                
             } else {
-                // Показываем ошибку
                 initialStatus.style.display = 'none';
                 taskStatusElement.innerHTML = '<span class="badge badge-warning">Ошибка загрузки</span>';
                 trackButton.disabled = true;
                 updateDebugInfo();
             }
         }
-        
+
         function updateDebugInfo() {
             const debugContent = document.getElementById('debug-content');
-            
-            const debugData = {
-                "Backend URL": BACKEND_URL,
-                "Post ID": postId,
-                "Admin ID": adminId,
-                "Ref": ref,
-                "Platform": platform,
-                "User ID": tgUserId,
-                "Username": tgUser?.username || 'Нет',
-                "First Name": tgUser?.first_name || 'Нет',
-                "Last Name": tgUser?.last_name || 'Нет',
-                "Telegram Platform": tg.platform,
-                "Telegram Version": tg.version,
-                "Parsed Params": parsedParams,
-                "Telegram Start Param": tg.initDataUnsafe?.tgWebAppStartParam || 'Нет'
-            };
-            
-            debugContent.innerHTML = Object.entries(debugData)
+
+            const debugData = [
+                ["Backend URL", BACKEND_URL],
+                ["Post ID", postId],
+                ["Admin ID", adminId],
+                ["Ref", ref || "Нет"],
+                ["Platform", platform],
+                ["User ID", tgUserId || "Не авторизован"],
+                ["Username", tgUser?.username || "Нет"],
+                ["First Name", tgUser?.first_name || "Нет"],
+                ["Last Name", tgUser?.last_name || "Нет"],
+                ["Telegram Platform", tg.platform],
+                ["Telegram Version", tg.version],
+                ["Start Param", tg.initDataUnsafe?.tgWebAppStartParam || "Нет"]
+            ];
+
+            debugContent.innerHTML = debugData
                 .map(([key, value]) => {
-                    const formattedValue = typeof value === 'object' 
-                        ? JSON.stringify(value, null, 2) 
+                    const formattedValue = typeof value === 'object'
+                        ? JSON.stringify(value, null, 2)
                         : String(value);
-                    return `<strong>${key}:</strong> ${formattedValue}`;
+                    return `<div class="debug-line"><strong>${key}:</strong> ${formattedValue}</div>`;
                 })
-                .join('<br>');
+                .join('');
         }
-        
+
         function toggleDebug() {
             const debugContent = document.getElementById('debug-content');
             const debugToggle = document.querySelector('.debug-toggle');
-            
+
             if (isDebugVisible) {
                 debugContent.style.display = 'none';
-                debugToggle.textContent = 'Развернуть';
+                debugToggle.textContent = 'Показать';
             } else {
                 debugContent.style.display = 'block';
-                debugToggle.textContent = 'Свернуть';
+                debugToggle.textContent = 'Скрыть';
             }
-            
+
             isDebugVisible = !isDebugVisible;
         }
-        
+
         // ============================================
-        // ОСНОВНАЯ ФУНКЦИЯ ОТКЛИКА
+        // ОСНОВНАЯ ФУНКЦИЯ ОТКЛИКА (логика сохранена)
         // ============================================
-        
         async function handleClick() {
             if (hasClicked) {
-                showStatus('Вы уже откликнулись на это задание', 'warning');
+                // в новом UI это почти не нужно, но оставим защиту
                 return;
             }
-            
+
             if (!parsedParams || !parsedParams.parsed_successfully) {
-                showStatus('Ошибка: Нет данных задания', 'error');
+                showProgressError('Ошибка: Нет данных задания');
                 return;
             }
-            
+
             hasClicked = true;
-            
+
             const trackButton = document.getElementById('track-button');
             const loading = document.getElementById('loading');
             const statusMessage = document.getElementById('status-message');
-            
-            // Показываем загрузку
+
+            // Переходим к шагу "Отправляем запрос"
+            setProgress(3, 'Writing summary…', 'Отправляем запрос на сервер…');
+
+            // Старые элементы обновим тоже (они скрыты, но пусть остаётся консистентно)
             trackButton.disabled = true;
             trackButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
             loading.style.display = 'block';
             statusMessage.style.display = 'none';
-            
+
             try {
                 console.log("Отправка данных на бэкенд:", API_ENDPOINTS.apiTrack);
-                
-                // Подготавливаем данные для отправки
+
                 const requestData = {
                     startapp: parsedParams.raw_param,
                     post_id: parsedParams.post_id,
@@ -713,8 +732,7 @@
                     source: 'mini_app',
                     timestamp: new Date().toISOString()
                 };
-                
-                // ДОБАВЛЯЕМ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ДЛЯ ДИНАМИЧЕСКОГО ОТОБРАЖЕНИЯ
+
                 if (tgUser) {
                     requestData.user_data = {
                         id: tgUser.id,
@@ -726,10 +744,12 @@
                     };
                     console.log("User data added to request:", requestData.user_data);
                 }
-                
+
                 console.log("Данные запроса:", requestData);
-                
-                // Отправляем запрос на бэкенд
+
+                // Шаг 4 — ждём ответ
+                setProgress(4, 'Checking response…', 'Ожидаем ответ сервера…');
+
                 const response = await fetch(API_ENDPOINTS.apiTrack, {
                     method: 'POST',
                     headers: {
@@ -738,9 +758,9 @@
                     },
                     body: JSON.stringify(requestData)
                 });
-                
+
                 console.log("Статус ответа:", response.status);
-                
+
                 let data;
                 try {
                     data = await response.json();
@@ -749,25 +769,25 @@
                     console.error("Ошибка парсинга JSON:", jsonError);
                     throw new Error('Ошибка формата ответа от сервера');
                 }
-                
+
                 if (!response.ok) {
                     throw new Error(data.error || `HTTP error! status: ${response.status}`);
                 }
-                
-                // Обрабатываем ответ
+
                 loading.style.display = 'none';
-                
+
                 if (data.success) {
                     const taskStatusElement = document.getElementById('task-status');
-                    
+
                     if (data.click_counted && data.is_unique) {
                         // Успешный уникальный отклик
-                        showStatus('✅ Успешно! Ваш отклик засчитан. Перенаправляем...', 'success');
+                        setProgress(5, 'Done', 'Открываем чат…');
+
                         taskStatusElement.innerHTML = '<span class="badge badge-success">Отклик принят</span>';
                         trackButton.innerHTML = '<i class="fas fa-check-double"></i> Отклик засчитан';
                         trackButton.classList.add('success');
-                        
-                        // Редирект через 1.5 секунды
+
+                        // маленькая пауза, чтобы человек увидел "Done"
                         setTimeout(() => {
                             if (data.redirect_url) {
                                 console.log("Redirecting to:", data.redirect_url);
@@ -775,73 +795,82 @@
                                 const text = `Здравствуйте! Я по поводу задания на ${platform}`;
                                 const url = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
 
+                                fadeOutOverlay();
                                 tg.openTelegramLink(url);
                             } else {
+                                fadeOutOverlay();
                                 tg.openTelegramLink('tg://resolve?domain=shardlightspace_bot');
                             }
-                        }, 1500);
-                        
+                        }, 900);
+
                     } else if (data.click_counted && !data.is_unique) {
                         // Повторный отклик
-                        showStatus('⚠️ Вы уже откликались на это задание ранее. Перенаправляем...', 'warning');
+                        setProgress(5, 'Already sent', 'Вы уже откликались — открываем чат…');
+
                         taskStatusElement.innerHTML = '<span class="badge badge-warning">Повторный отклик</span>';
                         trackButton.innerHTML = '<i class="fas fa-redo"></i> Повторный отклик';
-                        
-                        // Редирект через 2 секунды
+
                         setTimeout(() => {
                             if (data.redirect_url) {
                                 const username = data.admin_username?.replace('@', '');
                                 const text = `Здравствуйте! Я по поводу задания на ${platform}`;
                                 const url = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
 
+                                fadeOutOverlay();
                                 tg.openTelegramLink(url);
                             } else {
+                                fadeOutOverlay();
                                 tg.openTelegramLink('tg://resolve?domain=shardlightspace_bot');
                             }
-                        }, 2000);
-                        
+                        }, 900);
+
                     } else {
                         // Клик не засчитан
-                        showStatus('Ошибка: Клик не засчитан', 'error');
+                        showProgressError('Ошибка: клик не засчитан');
                         trackButton.innerHTML = '<i class="fas fa-redo"></i> Попробовать снова';
                         trackButton.disabled = false;
                         hasClicked = false;
+
+                        // Оставим оверлей на экране (можно закрыть мини-апп)
+                        setProgress(4, 'Error', 'Не удалось засчитать отклик');
                     }
                 } else {
-                    // Ошибка от бэкенда
-                    showStatus(`Ошибка: ${data.error || 'Неизвестная ошибка'}`, 'error');
+                    showProgressError(`Ошибка: ${data.error || 'Неизвестная ошибка'}`);
                     trackButton.innerHTML = '<i class="fas fa-redo"></i> Попробовать снова';
                     trackButton.disabled = false;
                     hasClicked = false;
+                    setProgress(4, 'Error', 'Сервер вернул ошибку');
                 }
-                
+
             } catch (error) {
                 console.error("Ошибка при отправке запроса:", error);
                 loading.style.display = 'none';
-                
-                showStatus('Ошибка соединения с сервером', 'error');
+
+                showProgressError('Ошибка соединения с сервером');
+                setProgress(4, 'Connection error', 'Пробуем открыть чат напрямую…');
+
                 trackButton.innerHTML = '<i class="fas fa-redo"></i> Попробовать снова';
                 trackButton.disabled = false;
                 hasClicked = false;
-                
-                // Пробуем редирект на всякий случай
+
+                // запасной редирект
                 setTimeout(() => {
+                    fadeOutOverlay();
                     tg.openTelegramLink('tg://resolve?domain=shardlightspace_bot');
-                }, 3000);
+                }, 1400);
             }
         }
-        
+
         // ============================================
-        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (старые)
         // ============================================
-        
         function showStatus(message, type) {
             const statusMessage = document.getElementById('status-message');
             statusMessage.textContent = message;
             statusMessage.className = 'status-message';
-            
+
             let icon = '';
-            switch(type) {
+            switch (type) {
                 case 'success':
                     statusMessage.classList.add('status-success');
                     icon = '<i class="fas fa-check-circle"></i> ';
@@ -859,37 +888,41 @@
                     icon = '<i class="fas fa-info-circle"></i> ';
                     break;
             }
-            
+
             statusMessage.innerHTML = icon + message;
             statusMessage.style.display = 'block';
         }
-        
+
         function openSupport() {
             tg.openTelegramLink('https://t.me/shardhelp_bot');
         }
-        
+
         // ============================================
-        // ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+        // ИНИЦИАЛИЗАЦИЯ (АВТОЗАПУСК)
         // ============================================
-        
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log("=== ИНИЦИАЛИЗАЦИЯ SHARD TASKS ===");
-            
+        document.addEventListener('DOMContentLoaded', async function () {
+            console.log("=== ИНИЦИАЛИЗАЦИЯ TASK TRACKER ===");
+
+            buildSteps();
+            setProgress(1, 'Initializing…', 'Запускаем мини-приложение…');
+
             try {
                 // 1. Инициализируем Telegram
                 const telegramReady = initTelegram();
                 if (!telegramReady) {
-                    showStatus('Ошибка инициализации Telegram', 'error');
+                    showProgressError('Ошибка инициализации Telegram');
+                    setProgress(1, 'Error', 'Не удалось инициализировать Telegram');
                     return;
                 }
-                
+
                 // 2. Парсим параметры
+                setProgress(2, 'Reading params…', 'Считываем параметры задания…');
                 parsedParams = parseTelegramParams();
-                
-                // 3. Обновляем интерфейс
-                setTimeout(updateUI, 500);
-                
-                // 4. Проверяем соединение с бэкендом
+
+                // 3. Обновляем старый UI (скрыт) — оставим для совместимости/логов
+                setTimeout(updateUI, 200);
+
+                // 4. Проверяем соединение с бэкендом (не блокирует)
                 setTimeout(async () => {
                     try {
                         const healthResponse = await fetch(API_ENDPOINTS.health);
@@ -897,21 +930,32 @@
                             console.log("Бэкенд доступен");
                         } else {
                             console.warn("Бэкенд недоступен");
-                            showStatus('⚠️ Сервер временно недоступен', 'warning');
                         }
                     } catch (error) {
                         console.warn("Не удалось проверить бэкенд:", error);
                     }
-                }, 1000);
-                
+                }, 350);
+
+                // 5. Автостарт без кнопки
+                if (parsedParams && parsedParams.parsed_successfully) {
+                    // небольшая пауза — чтобы анимация выглядела «как продукт»
+                    setTimeout(() => {
+                        handleClick();
+                    }, 450);
+                } else {
+                    setProgress(2, 'Error', 'Параметры задания не найдены');
+                    // оверлей оставляем, чтобы было видно сообщение об ошибке
+                }
+
                 console.log("Приложение инициализировано");
-                
+
             } catch (error) {
                 console.error("Критическая ошибка при инициализации:", error);
-                showStatus('Критическая ошибка при загрузке', 'error');
+                showProgressError('Критическая ошибка при загрузке');
+                setProgress(1, 'Error', 'Критическая ошибка');
             }
         });
-        
+
         // Обработчик изменения темы Telegram
         tg.onEvent('themeChanged', () => {
             if (tg.themeParams) {
@@ -924,4 +968,3 @@
     </script>
 </body>
 </html>
-
