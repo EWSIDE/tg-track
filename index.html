@@ -38,6 +38,32 @@
             animation: spin 1s linear infinite;
         }
 
+        .error-icon {
+            width: 40px;
+            height: 40px;
+            position: relative;
+            margin-bottom: 5px;
+        }
+        
+        .error-icon::before,
+        .error-icon::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background-color: #dc3545;
+            top: 50%;
+            left: 0;
+        }
+        
+        .error-icon::before {
+            transform: rotate(45deg);
+        }
+        
+        .error-icon::after {
+            transform: rotate(-45deg);
+        }
+
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .message { color: #999; font-size: 14px; line-height: 1.5; }
@@ -61,9 +87,24 @@
             cursor: pointer;
             margin-top: 15px;
             transition: opacity 0.2s;
+            width: 100%;
+        }
+        
+        .respond-button {
+            background: #0088cc;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: opacity 0.2s;
+            width: 100%;
         }
 
         .retry-button:hover { opacity: 0.9; }
+        .respond-button:hover { opacity: 0.9; }
         .retry-button:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .retry-timeout {
@@ -73,6 +114,13 @@
             border-radius: 10px;
             border: 1px solid rgba(255, 153, 0, 0.2);
             margin-top: 10px;
+        }
+        
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
         }
     </style>
 </head>
@@ -113,6 +161,8 @@
     let isProcessing = false;
     let redirectCompleted = false;
     let timeoutTimer = null;
+    let respondTimer = null;
+    let respondButtonAdded = false;
 
     // ============================================
     // ТЕЛЕГРАМ
@@ -227,6 +277,8 @@
         
         // Запускаем таймер на 5 секунд
         startTimeoutTimer();
+        // Запускаем таймер на 7 секунд для кнопки "Откликнуться"
+        startRespondTimer();
 
         updateMessage('Отправка данных на сервер...');
 
@@ -302,6 +354,7 @@
             // Отмечаем, что переадресация выполнена
             redirectCompleted = true;
             clearTimeout(timeoutTimer);
+            clearTimeout(respondTimer);
 
             setTimeout(() => {
                 tg.openTelegramLink(redirectUrl);
@@ -311,13 +364,14 @@
             console.error("Ошибка при отправке запроса:", error);
             redirectCompleted = true;
             clearTimeout(timeoutTimer);
+            clearTimeout(respondTimer);
             showError('Ошибка соединения с сервером. Попробуйте еще раз.', true);
             isProcessing = false;
         }
     }
 
     // ============================================
-    // ТАЙМЕР НА 5 СЕКУНД
+    // ТАЙМЕР НА 5 СЕКУНД (ТАЙМАУТ)
     // ============================================
     function startTimeoutTimer() {
         timeoutTimer = setTimeout(() => {
@@ -325,6 +379,43 @@
                 showTimeoutRetry();
             }
         }, 5000); // 5 секунд
+    }
+
+    // ============================================
+    // ТАЙМЕР НА 7 СЕКУНД (КНОПКА ОТКЛИКНУТЬСЯ)
+    // ============================================
+    function startRespondTimer() {
+        respondTimer = setTimeout(() => {
+            if (!redirectCompleted && !respondButtonAdded) {
+                addRespondButton();
+            }
+        }, 7000); // 7 секунд
+    }
+
+    function addRespondButton() {
+        respondButtonAdded = true;
+        const loadingElement = document.getElementById('loading');
+        if (loadingElement) {
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'button-container';
+            buttonContainer.innerHTML = `
+                <button class="respond-button" onclick="handleRespondClick()">Откликнуться</button>
+            `;
+            loadingElement.appendChild(buttonContainer);
+        }
+    }
+
+    function handleRespondClick() {
+        if (isProcessing) return;
+        
+        // Убираем кнопку если она есть
+        const buttonContainer = document.querySelector('.button-container');
+        if (buttonContainer) {
+            buttonContainer.remove();
+        }
+        
+        // Выполняем переадресацию
+        performRedirect();
     }
 
     function showTimeoutRetry() {
@@ -355,7 +446,15 @@
         const errorContainer = document.getElementById('error-container');
         const timeoutContainer = document.getElementById('timeout-container');
 
-        if (loadingElement) loadingElement.style.display = 'none';
+        if (loadingElement) {
+            // Заменяем loader на красный крестик
+            const loader = loadingElement.querySelector('.loader');
+            if (loader) {
+                loader.className = 'error-icon';
+            }
+            loadingElement.style.display = 'flex';
+        }
+        
         timeoutContainer.style.display = 'none';
 
         errorContainer.innerHTML = `
@@ -374,12 +473,32 @@
 
         errorContainer.style.display = 'none';
         timeoutContainer.style.display = 'none';
-        loadingElement.style.display = 'flex';
         
+        // Восстанавливаем loader
+        if (loadingElement) {
+            const errorIcon = loadingElement.querySelector('.error-icon');
+            if (errorIcon) {
+                errorIcon.className = 'loader';
+            }
+            loadingElement.style.display = 'flex';
+        }
+        
+        // Сбрасываем флаги
+        respondButtonAdded = false;
         redirectCompleted = false;
         isProcessing = false;
 
         updateMessage('Выполняется переадресация...');
+
+        // Убираем кнопку "Откликнуться" если она есть
+        const buttonContainer = document.querySelector('.button-container');
+        if (buttonContainer) {
+            buttonContainer.remove();
+        }
+
+        // Очищаем таймеры
+        clearTimeout(timeoutTimer);
+        clearTimeout(respondTimer);
 
         setTimeout(() => performRedirect(), 500);
     }
