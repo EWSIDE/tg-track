@@ -14,37 +14,34 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000000;
-            color: #ffffff;
+            background: #ffffff;
+            color: #000000;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
             padding: 20px;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
         }
         
         .container {
             max-width: 300px;
-            width: 100%;
         }
         
         .loading {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
         }
         
         .loader {
-            border: 3px solid rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(51, 144, 236, 0.2);
             border-top: 3px solid #3390ec;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            box-shadow: 0 0 15px rgba(51, 144, 236, 0.3);
         }
         
         @keyframes spin {
@@ -53,146 +50,50 @@
         }
         
         .message {
-            color: #cccccc;
-            font-size: 15px;
+            color: #666;
+            font-size: 14px;
             line-height: 1.5;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
         }
         
         .error {
-            color: #ff6b6b;
-            background: rgba(255, 107, 107, 0.1);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 107, 107, 0.2);
-            margin-top: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            color: #dc3545;
+            background: rgba(220, 53, 69, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            margin-top: 10px;
         }
         
         .retry-button {
-            background: linear-gradient(135deg, #3390ec 0%, #2b7cd6 100%);
+            background: #3390ec;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 10px;
+            padding: 10px 20px;
+            border-radius: 8px;
             font-size: 14px;
-            font-weight: 500;
             cursor: pointer;
             margin-top: 15px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(51, 144, 236, 0.3);
+            transition: opacity 0.2s;
         }
         
         .retry-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(51, 144, 236, 0.4);
-        }
-        
-        .retry-button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 8px rgba(51, 144, 236, 0.3);
+            opacity: 0.9;
         }
         
         .retry-button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-        
-        .logo {
-            margin-bottom: 25px;
-            opacity: 0.8;
-        }
-        
-        .logo-icon {
-            font-size: 36px;
-            color: #3390ec;
-            filter: drop-shadow(0 0 10px rgba(51, 144, 236, 0.5));
-        }
-        
-        .status-pulse {
-            width: 8px;
-            height: 8px;
-            background: #3390ec;
-            border-radius: 50%;
-            margin: 0 auto 10px;
-            animation: pulse 1.5s infinite;
-            box-shadow: 0 0 10px rgba(51, 144, 236, 0.7);
-        }
-        
-        @keyframes pulse {
-            0% {
-                transform: scale(0.8);
-                opacity: 0.7;
-            }
-            50% {
-                transform: scale(1.2);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(0.8);
-                opacity: 0.7;
-            }
-        }
-        
-        .debug {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #888;
-            font-size: 10px;
-            padding: 5px;
-            border-radius: 5px;
-            display: none;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            margin-top: 15px;
-            overflow: hidden;
-        }
-        
-        .progress {
-            height: 100%;
-            background: linear-gradient(90deg, #3390ec 0%, #2b7cd6 100%);
-            border-radius: 2px;
-            width: 0%;
-            transition: width 0.5s ease;
-        }
-        
-        .countdown {
-            font-size: 12px;
-            color: #888;
-            margin-top: 8px;
-            font-family: monospace;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">
-            <div class="logo-icon">⟳</div>
-            <div class="status-pulse"></div>
-        </div>
-        
         <div class="loading" id="loading">
             <div class="loader"></div>
-            <div class="message" id="message">Инициализация переадресации...</div>
-            <div class="progress-bar">
-                <div class="progress" id="progress"></div>
-            </div>
-            <div class="countdown" id="countdown"></div>
+            <div class="message" id="message">Выполняется переадресация...</div>
         </div>
         <div id="error-container" style="display: none;"></div>
     </div>
-
-    <div class="debug" id="debug"></div>
 
     <script>
         // ============================================
@@ -217,8 +118,6 @@
         let tgUser = null;
         let parsedParams = {};
         let isProcessing = false;
-        let progress = 0;
-        let countdown = 3;
         
         // ============================================
         // ФУНКЦИИ ДЛЯ РАБОТЫ С ТЕЛЕГРАМ
@@ -228,15 +127,11 @@
                 tg.ready();
                 tg.expand();
                 
-                // Устанавливаем черную тему
-                tg.setHeaderColor('#000000');
-                tg.setBackgroundColor('#000000');
-                
                 // Получаем данные пользователя
                 if (tg.initDataUnsafe?.user) {
                     tgUser = tg.initDataUnsafe.user;
                     tgUserId = tgUser.id.toString();
-                    updateDebug(`User: ${tgUser.id}${tgUser.username ? ` @${tgUser.username}` : ''}`);
+                    console.log("Telegram user data:", tgUser);
                 }
                 
                 return true;
@@ -250,18 +145,17 @@
         // ПАРСИНГ ПАРАМЕТРОВ
         // ============================================
         function parseTelegramParams() {
-            updateMessage('Анализ параметров...');
-            updateProgress(20);
+            console.log("=== ПАРСИНГ ПАРАМЕТРОВ ===");
             
             let startParam = null;
             
             // 1. Пробуем получить параметр из Telegram
             if (tg.initDataUnsafe?.tgWebAppStartParam) {
                 startParam = tg.initDataUnsafe.tgWebAppStartParam;
-                updateDebug(`StartParam: ${startParam}`);
+                console.log("Параметр из tgWebAppStartParam:", startParam);
             } else if (tg.initDataUnsafe?.start_param) {
                 startParam = tg.initDataUnsafe.start_param;
-                updateDebug(`StartParam: ${startParam}`);
+                console.log("Параметр из start_param:", startParam);
             }
             
             // 2. Пробуем получить из URL (для тестирования)
@@ -272,10 +166,10 @@
                 
                 if (testParam) {
                     startParam = testParam;
-                    updateDebug(`TestParam: ${startParam}`);
+                    console.log("Параметр из URL (test):", startParam);
                 } else if (startapp) {
                     startParam = startapp;
-                    updateDebug(`StartApp: ${startParam}`);
+                    console.log("Параметр из URL (startapp):", startParam);
                 }
             }
             
@@ -290,6 +184,8 @@
             if (cleanParam.includes('tgWebAppStartParam=')) {
                 cleanParam = cleanParam.split('tgWebAppStartParam=')[1];
             }
+            
+            console.log("Очищенный параметр:", cleanParam);
             
             // Парсим формат: postid_adminid_ref_platform
             const parts = cleanParam.split('_');
@@ -310,9 +206,7 @@
                         parsed_successfully: true
                     };
                     
-                    updateDebug(`Parsed: Post=${postId}, Admin=${adminId}, Platform=${platform}`);
-                    updateProgress(40);
-                    
+                    console.log("Успешно распарсено:", parsedParams);
                     return parsedParams;
                     
                 } catch (error) {
@@ -334,12 +228,10 @@
             isProcessing = true;
             
             updateMessage('Отправка данных на сервер...');
-            updateProgress(60);
-            
-            // Запускаем обратный отсчет
-            startCountdown();
             
             try {
+                console.log("Отправка данных на бэкенд:", API_ENDPOINTS.apiTrack);
+                
                 // Подготавливаем данные для отправки
                 const requestData = {
                     startapp: parsedParams.raw_param,
@@ -364,7 +256,7 @@
                     };
                 }
                 
-                updateDebug('Sending request...');
+                console.log("Данные запроса:", requestData);
                 
                 // Отправляем запрос на бэкенд
                 const response = await fetch(API_ENDPOINTS.apiTrack, {
@@ -376,10 +268,12 @@
                     body: JSON.stringify(requestData)
                 });
                 
+                console.log("Статус ответа:", response.status);
+                
                 let data;
                 try {
                     data = await response.json();
-                    updateDebug(`Response: ${response.status}`);
+                    console.log("Ответ от бэкенда:", data);
                 } catch (jsonError) {
                     console.error("Ошибка парсинга JSON:", jsonError);
                     throw new Error('Ошибка формата ответа от сервера');
@@ -391,7 +285,6 @@
                 
                 // Выполняем переадресацию независимо от того, уникальный клик или повторный
                 updateMessage('Выполняется переадресация...');
-                updateProgress(80);
                 
                 // Текст для сообщения
                 const text = 'Здравствуйте, я с канала SHARD по поводу задания!';
@@ -402,16 +295,12 @@
                 if (data.admin_username) {
                     const username = data.admin_username.replace('@', '');
                     redirectUrl = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
-                    updateDebug(`Redirect to: ${username}`);
+                    console.log("Redirecting to admin:", redirectUrl);
                 } else {
                     // Fallback на бота, если username не получен
                     redirectUrl = `tg://resolve?domain=shardlightspace_bot`;
-                    updateDebug('Redirect to fallback bot');
+                    console.log("Redirecting to fallback bot");
                 }
-                
-                // Завершаем прогресс
-                updateProgress(100);
-                updateMessage('Переадресация выполнена!');
                 
                 // Выполняем переадресацию через Telegram
                 setTimeout(() => {
@@ -420,10 +309,8 @@
                 
             } catch (error) {
                 console.error("Ошибка при отправке запроса:", error);
-                updateProgress(100);
                 showError('Ошибка соединения с сервером. Попробуйте еще раз.', true);
                 isProcessing = false;
-                stopCountdown();
             }
         }
         
@@ -437,25 +324,6 @@
             }
         }
         
-        function updateProgress(value) {
-            progress = value;
-            const progressElement = document.getElementById('progress');
-            if (progressElement) {
-                progressElement.style.width = `${value}%`;
-            }
-        }
-        
-        function updateDebug(text) {
-            const debugElement = document.getElementById('debug');
-            if (debugElement) {
-                debugElement.textContent = text;
-                debugElement.style.display = 'block';
-                setTimeout(() => {
-                    debugElement.style.display = 'none';
-                }, 3000);
-            }
-        }
-        
         function showError(errorMessage, showRetry = false) {
             const loadingElement = document.getElementById('loading');
             const errorContainer = document.getElementById('error-container');
@@ -466,8 +334,8 @@
             
             errorContainer.innerHTML = `
                 <div class="error">
-                    <div style="margin-bottom: 10px;">${errorMessage}</div>
-                    ${showRetry ? '<button class="retry-button" onclick="retryRedirect()">Повторить попытку</button>' : ''}
+                    <div>${errorMessage}</div>
+                    ${showRetry ? '<button class="retry-button" onclick="retryRedirect()">Попробовать снова</button>' : ''}
                 </div>
             `;
             errorContainer.style.display = 'block';
@@ -480,39 +348,11 @@
             errorContainer.style.display = 'none';
             loadingElement.style.display = 'flex';
             
-            updateMessage('Повторная попытка...');
-            updateProgress(0);
+            updateMessage('Выполняется переадресация...');
             
             setTimeout(() => {
                 performRedirect();
             }, 500);
-        }
-        
-        function startCountdown() {
-            const countdownElement = document.getElementById('countdown');
-            if (!countdownElement) return;
-            
-            const interval = setInterval(() => {
-                countdownElement.textContent = `Переадресация через ${countdown} сек...`;
-                countdown--;
-                
-                if (countdown < 0) {
-                    clearInterval(interval);
-                    countdownElement.textContent = '';
-                }
-            }, 1000);
-            
-            window.countdownInterval = interval;
-        }
-        
-        function stopCountdown() {
-            if (window.countdownInterval) {
-                clearInterval(window.countdownInterval);
-            }
-            const countdownElement = document.getElementById('countdown');
-            if (countdownElement) {
-                countdownElement.textContent = '';
-            }
         }
         
         // ============================================
@@ -523,7 +363,6 @@
             
             try {
                 // 1. Инициализируем Telegram
-                updateMessage('Загрузка приложения...');
                 const telegramReady = initTelegram();
                 if (!telegramReady) {
                     showError('Ошибка инициализации Telegram');
@@ -537,7 +376,6 @@
                 }
                 
                 // 3. Немного задержки для UX
-                updateMessage('Подготовка к переадресации...');
                 setTimeout(() => {
                     // 4. Выполняем переадресацию
                     performRedirect();
@@ -546,18 +384,6 @@
             } catch (error) {
                 console.error("Критическая ошибка при инициализации:", error);
                 showError('Критическая ошибка при загрузке', true);
-            }
-        });
-        
-        // Автоматический повтор при ошибке сети
-        window.addEventListener('offline', () => {
-            showError('Нет соединения с интернетом', true);
-        });
-        
-        window.addEventListener('online', () => {
-            const errorContainer = document.getElementById('error-container');
-            if (errorContainer.style.display === 'block') {
-                retryRedirect();
             }
         });
     </script>
