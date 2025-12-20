@@ -14,11 +14,9 @@
     :root {
       --bg: #000000;
       --text: #ffffff;
-      --muted: #6b6b6b;
-      --line: #1e1e1e;
-      --accent: #ffffff;
+      --muted: rgba(255, 255, 255, 0.45);
+      --line: rgba(255, 255, 255, 0.14);
 
-      /* Telegram safe-area */
       --safe-top: env(safe-area-inset-top);
       --safe-bottom: env(safe-area-inset-bottom);
     }
@@ -27,34 +25,37 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
-      background: var(--bg);
+      background: #000;
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-        sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", Roboto, sans-serif;
       min-height: 100vh;
-      padding-top: calc(16px + var(--safe-top));
-      padding-bottom: calc(16px + var(--safe-bottom));
+      padding-top: calc(28px + var(--safe-top));
+      padding-bottom: calc(20px + var(--safe-bottom));
     }
 
     .app {
       max-width: 420px;
       margin: 0 auto;
-      padding: 0 16px;
+      padding: 0 18px;
     }
 
     .stepper {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 28px;
+      margin-top: 12px;
     }
 
     .step {
       display: flex;
-      gap: 16px;
+      gap: 18px;
       align-items: flex-start;
+      animation: springIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
     .step-rail {
@@ -68,34 +69,67 @@
       height: 10px;
       border-radius: 50%;
       background: var(--muted);
+      position: relative;
     }
 
     .step-line {
       width: 2px;
-      height: 36px;
+      height: 38px;
       background: var(--line);
-      margin-top: 6px;
+      margin-top: 8px;
+      border-radius: 2px;
     }
 
     .step-title {
-      font-size: 14px;
-      line-height: 1.4;
-      padding-top: 1px;
+      font-size: 15px;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
       color: var(--muted);
+      transition: color 0.3s ease;
     }
 
     .step.done .step-dot {
-      background: var(--accent);
+      background: #fff;
     }
 
     .step.active .step-dot {
-      background: var(--accent);
-      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.12);
+      background: #fff;
+    }
+
+    .step.active .step-dot::after {
+      content: "";
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      animation: pulse 1.6s ease-out infinite;
     }
 
     .step.done .step-title,
     .step.active .step-title {
-      color: var(--text);
+      color: #fff;
+    }
+
+    @keyframes springIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 0.9;
+        transform: scale(0.6);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(1.4);
+      }
     }
   </style>
 </head>
@@ -111,44 +145,40 @@
      **********************************************************/
     const BACKEND_URL = "https://5-129-200-89.nip.io";
     const API_TRACK = BACKEND_URL + "/api/track";
-
     const tg = window.Telegram.WebApp;
 
     let parsedParams = null;
     let tgUser = null;
 
     /**********************************************************
-     * STEPPER
+     * STEPS
      **********************************************************/
     const STEPS = [
-      { id: "load", title: "Загрузка задания" },
-      { id: "check", title: "Проверка пользователя" },
-      { id: "track", title: "Фиксация отклика" },
-      { id: "redirect", title: "Переадресация" }
+      "Загрузка задания",
+      "Проверка пользователя",
+      "Фиксация отклика",
+      "Переадресация"
     ];
 
     function renderStepper(activeIndex) {
       const root = document.getElementById("stepper");
       root.innerHTML = "";
 
-      STEPS.forEach((step, index) => {
+      STEPS.forEach((title, index) => {
         let state = "pending";
         if (index < activeIndex) state = "done";
         if (index === activeIndex) state = "active";
 
         const el = document.createElement("div");
         el.className = `step ${state}`;
+        el.style.animationDelay = `${index * 60}ms`;
 
         el.innerHTML = `
           <div class="step-rail">
             <div class="step-dot"></div>
-            ${
-              index < STEPS.length - 1
-                ? `<div class="step-line"></div>`
-                : ""
-            }
+            ${index < STEPS.length - 1 ? `<div class="step-line"></div>` : ""}
           </div>
-          <div class="step-title">${step.title}</div>
+          <div class="step-title">${title}</div>
         `;
 
         root.appendChild(el);
@@ -164,49 +194,49 @@
       tg.setBackgroundColor("#000000");
       tg.setHeaderColor("#000000");
 
+      tg.MainButton.setParams({
+        text: "Закрыть",
+        is_visible: true
+      });
+
+      tg.MainButton.onClick(() => tg.close());
+
       if (tg.initDataUnsafe?.user) {
         tgUser = tg.initDataUnsafe.user;
       }
     }
 
-    /**********************************************************
-     * PARAM PARSE
-     **********************************************************/
     function parseParams() {
-      let startParam =
+      let start =
         tg.initDataUnsafe?.tgWebAppStartParam ||
         tg.initDataUnsafe?.start_param;
 
-      if (!startParam) {
-        const urlParams = new URLSearchParams(window.location.search);
-        startParam = urlParams.get("test");
+      if (!start) {
+        start = new URLSearchParams(location.search).get("test");
       }
 
-      if (!startParam) return null;
+      if (!start) return null;
 
-      const clean = startParam.replace("tgWebAppStartParam=", "");
-      const parts = clean.split("_");
-
+      const p = start.replace("tgWebAppStartParam=", "").split("_");
       return {
-        raw: clean,
-        post_id: parseInt(parts[0]),
-        admin_id: parseInt(parts[1]),
-        ref: parts[2] || "direct",
-        platform: parts[3] || "tg"
+        raw: start,
+        post_id: +p[0],
+        admin_id: +p[1],
+        ref: p[2] || "direct",
+        platform: p[3] || "tg"
       };
     }
 
     /**********************************************************
-     * AUTO FLOW (NO BUTTON)
+     * FLOW
      **********************************************************/
     async function autoFlow() {
-      // step 0
       renderStepper(0);
-
       await delay(400);
+
       renderStepper(1);
-
       await delay(400);
+
       renderStepper(2);
 
       const payload = {
@@ -228,8 +258,7 @@
       });
 
       const data = await res.json();
-
-      if (!data.success) return;
+      if (!data?.success) return;
 
       renderStepper(3);
 
@@ -240,9 +269,7 @@
       tg.openTelegramLink(url);
     }
 
-    function delay(ms) {
-      return new Promise((r) => setTimeout(r, ms));
-    }
+    const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
     /**********************************************************
      * BOOT
@@ -250,12 +277,8 @@
     document.addEventListener("DOMContentLoaded", () => {
       initTelegram();
       parsedParams = parseParams();
-
       renderStepper(0);
-
-      if (parsedParams) {
-        autoFlow();
-      }
+      if (parsedParams) autoFlow();
     });
   </script>
 </body>
