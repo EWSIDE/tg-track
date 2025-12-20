@@ -65,6 +65,15 @@
 
         .retry-button:hover { opacity: 0.9; }
         .retry-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .retry-timeout {
+            color: #ff9900;
+            background: rgba(255, 153, 0, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 153, 0, 0.2);
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -74,6 +83,7 @@
         <div class="message" id="message">Выполняется переадресация...</div>
     </div>
     <div id="error-container" style="display: none;"></div>
+    <div id="timeout-container" style="display: none;"></div>
 </div>
 
 <script>
@@ -101,6 +111,8 @@
 
     let parsedParams = {};
     let isProcessing = false;
+    let redirectCompleted = false;
+    let timeoutTimer = null;
 
     // ============================================
     // ТЕЛЕГРАМ
@@ -212,6 +224,9 @@
     async function performRedirect() {
         if (isProcessing) return;
         isProcessing = true;
+        
+        // Запускаем таймер на 5 секунд
+        startTimeoutTimer();
 
         updateMessage('Отправка данных на сервер...');
 
@@ -283,6 +298,10 @@
             }
 
             console.log("Redirecting to:", redirectUrl);
+            
+            // Отмечаем, что переадресация выполнена
+            redirectCompleted = true;
+            clearTimeout(timeoutTimer);
 
             setTimeout(() => {
                 tg.openTelegramLink(redirectUrl);
@@ -290,9 +309,37 @@
 
         } catch (error) {
             console.error("Ошибка при отправке запроса:", error);
+            redirectCompleted = true;
+            clearTimeout(timeoutTimer);
             showError('Ошибка соединения с сервером. Попробуйте еще раз.', true);
             isProcessing = false;
         }
+    }
+
+    // ============================================
+    // ТАЙМЕР НА 5 СЕКУНД
+    // ============================================
+    function startTimeoutTimer() {
+        timeoutTimer = setTimeout(() => {
+            if (!redirectCompleted) {
+                showTimeoutRetry();
+            }
+        }, 5000); // 5 секунд
+    }
+
+    function showTimeoutRetry() {
+        const loadingElement = document.getElementById('loading');
+        const timeoutContainer = document.getElementById('timeout-container');
+        
+        if (loadingElement) loadingElement.style.display = 'none';
+        
+        timeoutContainer.innerHTML = `
+            <div class="retry-timeout">
+                <div>Переадресация занимает больше времени, чем ожидалось.</div>
+                <button class="retry-button" onclick="retryRedirect()">Попробовать снова</button>
+            </div>
+        `;
+        timeoutContainer.style.display = 'block';
     }
 
     // ============================================
@@ -306,8 +353,10 @@
     function showError(errorMessage, showRetry = false) {
         const loadingElement = document.getElementById('loading');
         const errorContainer = document.getElementById('error-container');
+        const timeoutContainer = document.getElementById('timeout-container');
 
         if (loadingElement) loadingElement.style.display = 'none';
+        timeoutContainer.style.display = 'none';
 
         errorContainer.innerHTML = `
             <div class="error">
@@ -321,9 +370,14 @@
     function retryRedirect() {
         const loadingElement = document.getElementById('loading');
         const errorContainer = document.getElementById('error-container');
+        const timeoutContainer = document.getElementById('timeout-container');
 
         errorContainer.style.display = 'none';
+        timeoutContainer.style.display = 'none';
         loadingElement.style.display = 'flex';
+        
+        redirectCompleted = false;
+        isProcessing = false;
 
         updateMessage('Выполняется переадресация...');
 
