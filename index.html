@@ -38,54 +38,17 @@
             animation: spin 1s linear infinite;
         }
 
-        .error-icon {
-            width: 40px;
-            height: 40px;
-            position: relative;
-            margin-bottom: 5px;
-        }
-        
-        .error-icon::before,
-        .error-icon::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 3px;
-            background-color: #dc3545;
-            top: 50%;
-            left: 0;
-        }
-        
-        .error-icon::before {
-            transform: rotate(45deg);
-        }
-        
-        .error-icon::after {
-            transform: rotate(-45deg);
-        }
-
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .message { 
-            color: #999; 
-            font-size: 14px; 
-            line-height: 1.5;
-            min-height: 20px;
-        }
+        .message { color: #999; font-size: 14px; line-height: 1.5; }
 
-        .error-message {
+        .error {
             color: #dc3545;
-            font-size: 14px;
-            line-height: 1.5;
-            margin-top: 5px;
-        }
-
-        .button-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 15px;
-            width: 100%;
+            background: rgba(220, 53, 69, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            margin-top: 10px;
         }
 
         .retry-button {
@@ -96,33 +59,21 @@
             border-radius: 8px;
             font-size: 14px;
             cursor: pointer;
+            margin-top: 15px;
             transition: opacity 0.2s;
-            width: 100%;
-        }
-        
-        .respond-button {
-            background: #0088cc;
-            color: #ffffff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            width: 100%;
         }
 
         .retry-button:hover { opacity: 0.9; }
-        .respond-button:hover { opacity: 0.9; }
         .retry-button:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="loading" id="loading">
-        <div class="loader" id="loader-icon"></div>
+        <div class="loader"></div>
         <div class="message" id="message">Выполняется переадресация...</div>
     </div>
+    <div id="error-container" style="display: none;"></div>
 </div>
 
 <script>
@@ -150,9 +101,6 @@
 
     let parsedParams = {};
     let isProcessing = false;
-    let redirectCompleted = false;
-    let respondTimer = null;
-    let respondButtonAdded = false;
 
     // ============================================
     // ТЕЛЕГРАМ
@@ -264,9 +212,6 @@
     async function performRedirect() {
         if (isProcessing) return;
         isProcessing = true;
-        
-        // Запускаем таймер на 7 секунд для кнопки "Откликнуться"
-        startRespondTimer();
 
         updateMessage('Отправка данных на сервер...');
 
@@ -338,10 +283,6 @@
             }
 
             console.log("Redirecting to:", redirectUrl);
-            
-            // Отмечаем, что переадресация выполнена
-            redirectCompleted = true;
-            clearTimeout(respondTimer);
 
             setTimeout(() => {
                 tg.openTelegramLink(redirectUrl);
@@ -349,62 +290,9 @@
 
         } catch (error) {
             console.error("Ошибка при отправке запроса:", error);
-            redirectCompleted = true;
-            clearTimeout(respondTimer);
-            showError('Ошибка соединения с сервером. Попробуйте еще раз.');
+            showError('Ошибка соединения с сервером. Попробуйте еще раз.', true);
             isProcessing = false;
         }
-    }
-
-    // ============================================
-    // ТАЙМЕР НА 7 СЕКУНД (КНОПКА ОТКЛИКНУТЬСЯ)
-    // ============================================
-    function startRespondTimer() {
-        respondTimer = setTimeout(() => {
-            if (!redirectCompleted && !respondButtonAdded) {
-                addRespondButton();
-            }
-        }, 7000); // 7 секунд
-    }
-
-    function addRespondButton() {
-        respondButtonAdded = true;
-        
-        // Убираем старые кнопки если есть
-        removeOldButtons();
-        
-        // Добавляем кнопку "Откликнуться"
-        const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'button-container';
-        buttonContainer.innerHTML = `<button class="respond-button" onclick="handleRespondClick()">Откликнуться</button>`;
-        
-        const loadingElement = document.getElementById('loading');
-        if (loadingElement) {
-            loadingElement.appendChild(buttonContainer);
-        }
-    }
-
-    function handleRespondClick() {
-        if (isProcessing) return;
-        
-        // Убираем старые кнопки если есть
-        removeOldButtons();
-        
-        // Сбрасываем флаги
-        respondButtonAdded = false;
-        isProcessing = false;
-        
-        // Восстанавливаем loader если был заменен на крестик
-        const loaderIcon = document.getElementById('loader-icon');
-        if (loaderIcon && loaderIcon.className === 'error-icon') {
-            loaderIcon.className = 'loader';
-        }
-        
-        // Обновляем сообщение
-        updateMessage('Выполняется переадресация...');
-        
-        // Выполняем переадресацию
-        performRedirect();
     }
 
     // ============================================
@@ -412,67 +300,32 @@
     // ============================================
     function updateMessage(text) {
         const messageElement = document.getElementById('message');
-        if (messageElement) {
-            // Меняем класс в зависимости от содержания
-            if (text.includes('Ошибка') || text.includes('не найдено') || text.includes('соединения')) {
-                messageElement.className = 'error-message';
-            } else {
-                messageElement.className = 'message';
-            }
-            messageElement.textContent = text;
-        }
+        if (messageElement) messageElement.textContent = text;
     }
 
-    function showError(errorMessage) {
-        // Заменяем loader на красный крестик
-        const loaderIcon = document.getElementById('loader-icon');
-        if (loaderIcon) {
-            loaderIcon.className = 'error-icon';
-        }
-        
-        // Обновляем сообщение
-        updateMessage(errorMessage);
-        
-        // Добавляем кнопку "Попробовать снова"
-        removeOldButtons();
-        
-        const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'button-container';
-        buttonContainer.innerHTML = `<button class="retry-button" onclick="retryRedirect()">Попробовать снова</button>`;
-        
+    function showError(errorMessage, showRetry = false) {
         const loadingElement = document.getElementById('loading');
-        if (loadingElement) {
-            loadingElement.appendChild(buttonContainer);
-        }
-    }
+        const errorContainer = document.getElementById('error-container');
 
-    function removeOldButtons() {
-        const buttonContainer = document.querySelector('.button-container');
-        if (buttonContainer) {
-            buttonContainer.remove();
-        }
+        if (loadingElement) loadingElement.style.display = 'none';
+
+        errorContainer.innerHTML = `
+            <div class="error">
+                <div>${errorMessage}</div>
+                ${showRetry ? '<button class="retry-button" onclick="retryRedirect()">Попробовать снова</button>' : ''}
+            </div>
+        `;
+        errorContainer.style.display = 'block';
     }
 
     function retryRedirect() {
-        // Убираем старые кнопки
-        removeOldButtons();
-        
-        // Сбрасываем флаги
-        respondButtonAdded = false;
-        redirectCompleted = false;
-        isProcessing = false;
+        const loadingElement = document.getElementById('loading');
+        const errorContainer = document.getElementById('error-container');
 
-        // Восстанавливаем loader
-        const loaderIcon = document.getElementById('loader-icon');
-        if (loaderIcon && loaderIcon.className === 'error-icon') {
-            loaderIcon.className = 'loader';
-        }
-        
-        // Обновляем сообщение
+        errorContainer.style.display = 'none';
+        loadingElement.style.display = 'flex';
+
         updateMessage('Выполняется переадресация...');
-
-        // Очищаем таймер
-        clearTimeout(respondTimer);
 
         setTimeout(() => performRedirect(), 500);
     }
@@ -497,7 +350,7 @@
 
         } catch (error) {
             console.error("Критическая ошибка при инициализации:", error);
-            showError('Критическая ошибка при загрузке');
+            showError('Критическая ошибка при загрузке', true);
         }
     });
 </script>
