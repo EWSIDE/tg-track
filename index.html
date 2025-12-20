@@ -20,7 +20,10 @@
             padding: 20px;
         }
 
-        .container { max-width: 300px; }
+        .container { 
+            max-width: 300px;
+            width: 100%;
+        }
 
         .loading {
             display: flex;
@@ -38,33 +41,100 @@
             animation: spin 1s linear infinite;
         }
 
+        .error-icon {
+            width: 48px;
+            height: 48px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(220, 53, 69, 0.1);
+            border-radius: 50%;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .error-icon::before,
+        .error-icon::after {
+            content: '';
+            position: absolute;
+            width: 28px;
+            height: 3px;
+            background: linear-gradient(90deg, #dc3545, #ff6b6b);
+            border-radius: 3px;
+            box-shadow: 0 0 8px rgba(220, 53, 69, 0.5);
+        }
+
+        .error-icon::before {
+            transform: rotate(45deg);
+        }
+
+        .error-icon::after {
+            transform: rotate(-45deg);
+        }
+
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .message { color: #999; font-size: 14px; line-height: 1.5; }
+        .message { 
+            color: #999; 
+            font-size: 14px; 
+            line-height: 1.5;
+        }
 
         .error {
-            color: #dc3545;
-            background: rgba(220, 53, 69, 0.1);
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(220, 53, 69, 0.2);
+            color: #999;
+            font-size: 14px;
+            line-height: 1.5;
             margin-top: 10px;
         }
 
-        .retry-button {
-            background: #ffffff;
-            color: #000000;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            margin-top: 15px;
-            transition: opacity 0.2s;
+        .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
         }
 
-        .retry-button:hover { opacity: 0.9; }
-        .retry-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .ios-button {
+            background: #ffffff;
+            color: #007aff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 240px;
+            margin-top: 20px;
+        }
+
+        .ios-button:hover {
+            background: #f2f2f7;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        .ios-button:active {
+            background: #e5e5ea;
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .ios-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .button-container {
+            margin-top: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -74,6 +144,7 @@
         <div class="message" id="message">Выполняется переадресация...</div>
     </div>
     <div id="error-container" style="display: none;"></div>
+    <div id="retry-button-container" class="button-container" style="display: none;"></div>
 </div>
 
 <script>
@@ -101,6 +172,7 @@
 
     let parsedParams = {};
     let isProcessing = false;
+    let retryButtonTimeout = null;
 
     // ============================================
     // ТЕЛЕГРАМ
@@ -270,22 +342,50 @@
 
             const text = 'Здравствуйте, я с канала SHARD по поводу задания!';
 
-            // ✅ ГЛАВНОЕ ИСПРАВЛЕНИЕ:
-            // используем redirect_url с бэкенда (он может подтянуть username из БД)
-            let redirectUrl = data.redirect_url || 'tg://resolve?domain=shardlightspace_bot';
-
-            // Если это https://t.me/<username> — добавим текст
-            if (redirectUrl.startsWith('https://t.me/')) {
-                // аккуратно добавим query
-                const hasQuery = redirectUrl.includes('?');
-                const sep = hasQuery ? '&' : '?';
-                redirectUrl = `${redirectUrl}${sep}text=${encodeURIComponent(text)}`;
+            // ✅ ВСЕГДА ИСПОЛЬЗУЕМ https://t.me/
+            // Получаем username из бэкенда или используем дефолтный
+            const username = data.username || 'shardtask_bot';
+            
+            // Формируем https://t.me/ ссылку с текстом
+            let redirectUrl = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
+            
+            // Если бэкенд вернул redirect_url, проверяем что это https://t.me/
+            if (data.redirect_url && data.redirect_url.startsWith('https://t.me/')) {
+                // Используем URL от бэкенда, но добавляем текст если его нет
+                redirectUrl = data.redirect_url;
+                if (!redirectUrl.includes('?text=')) {
+                    const hasQuery = redirectUrl.includes('?');
+                    const sep = hasQuery ? '&' : '?';
+                    redirectUrl = `${redirectUrl}${sep}text=${encodeURIComponent(text)}`;
+                }
             }
+            
+            // Также можно открыть сразу в чат (без выбора "Отправить")
+            // redirectUrl = `https://t.me/${username}?start=${encodeURIComponent(text)}`;
 
             console.log("Redirecting to:", redirectUrl);
 
             setTimeout(() => {
-                tg.openTelegramLink(redirectUrl);
+                try {
+                    // Используем openTelegramLink для https://t.me/ ссылок
+                    // Это работает на всех платформах в Telegram Mini Apps
+                    tg.openTelegramLink(redirectUrl);
+                    
+                    // Дополнительный фоллбэк на случай если openTelegramLink не сработал
+                    setTimeout(() => {
+                        // Если через 2 секунды мы все еще на этой странице,
+                        // пробуем открыть в новом окне
+                        if (document.visibilityState !== 'hidden') {
+                            console.log("Fallback: opening in new window");
+                            window.open(redirectUrl, '_blank');
+                        }
+                    }, 2000);
+                    
+                } catch (error) {
+                    console.error("Error opening Telegram link:", error);
+                    // Фоллбэк: открываем в текущем окне
+                    window.location.href = redirectUrl;
+                }
             }, 500);
 
         } catch (error) {
@@ -310,22 +410,43 @@
         if (loadingElement) loadingElement.style.display = 'none';
 
         errorContainer.innerHTML = `
-            <div class="error">
-                <div>${errorMessage}</div>
-                ${showRetry ? '<button class="retry-button" onclick="retryRedirect()">Попробовать снова</button>' : ''}
+            <div class="error-container">
+                <div class="error-icon"></div>
+                <div class="error">${errorMessage}</div>
             </div>
         `;
         errorContainer.style.display = 'block';
+
+        if (showRetry) {
+            showRetryButton();
+        }
+    }
+
+    function showRetryButton() {
+        clearTimeout(retryButtonTimeout);
+        
+        retryButtonTimeout = setTimeout(() => {
+            const buttonContainer = document.getElementById('retry-button-container');
+            buttonContainer.innerHTML = `
+                <button class="ios-button" onclick="retryRedirect()">
+                    Попробовать снова
+                </button>
+            `;
+            buttonContainer.style.display = 'flex';
+        }, 7000); // 7 секунд
     }
 
     function retryRedirect() {
         const loadingElement = document.getElementById('loading');
         const errorContainer = document.getElementById('error-container');
+        const buttonContainer = document.getElementById('retry-button-container');
 
         errorContainer.style.display = 'none';
+        buttonContainer.style.display = 'none';
         loadingElement.style.display = 'flex';
 
         updateMessage('Выполняется переадресация...');
+        isProcessing = false;
 
         setTimeout(() => performRedirect(), 500);
     }
