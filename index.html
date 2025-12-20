@@ -1,975 +1,262 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TraffPost | Отклик на задание</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>Task Flow</title>
 
-    <style>
-        :root {
-            --tg-theme-bg-color: #ffffff;
-            --tg-theme-text-color: #000000;
-            --tg-theme-hint-color: #999999;
-            --tg-theme-link-color: #3390ec;
-            --tg-theme-button-color: #3390ec;
-            --tg-theme-button-text-color: #ffffff;
-            --tg-theme-secondary-bg-color: #f1f1f1;
-        }
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <style>
+    :root {
+      --bg: #000000;
+      --text: #ffffff;
+      --muted: #6b6b6b;
+      --line: #1e1e1e;
+      --accent: #ffffff;
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            min-height: 100vh;
-            padding: 20px;
-            transition: background-color 0.3s ease;
-        }
+      /* Telegram safe-area */
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+    }
 
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-        }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-top: 10px;
-        }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        sans-serif;
+      min-height: 100vh;
+      padding-top: calc(16px + var(--safe-top));
+      padding-bottom: calc(16px + var(--safe-bottom));
+    }
 
-        .logo {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            margin: 0 auto 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
+    .app {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
 
-        h1 {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
+    .stepper {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
 
-        .subtitle {
-            color: var(--tg-theme-hint-color);
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
+    .step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
 
-        .info-card {
-            background: rgba(51, 144, 236, 0.08);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(51, 144, 236, 0.15);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
+    .step-rail {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-        }
+    .step-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
 
-        .info-row:last-child {
-            margin-bottom: 0;
-            padding-bottom: 0;
-            border-bottom: none;
-        }
+    .step-line {
+      width: 2px;
+      height: 36px;
+      background: var(--line);
+      margin-top: 6px;
+    }
 
-        .info-label {
-            color: var(--tg-theme-hint-color);
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+    .step-title {
+      font-size: 14px;
+      line-height: 1.4;
+      padding-top: 1px;
+      color: var(--muted);
+    }
 
-        .info-value {
-            font-weight: 600;
-            text-align: right;
-            font-size: 14px;
-        }
+    .step.done .step-dot {
+      background: var(--accent);
+    }
 
-        .button {
-            width: 100%;
-            padding: 16px;
-            background: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none;
-            border-radius: 14px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 12px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 2px 8px rgba(51, 144, 236, 0.2);
-        }
+    .step.active .step-dot {
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.12);
+    }
 
-        .button:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(51, 144, 236, 0.3);
-        }
-
-        .button:active {
-            opacity: 0.8;
-            transform: translateY(0);
-            box-shadow: 0 1px 4px rgba(51, 144, 236, 0.2);
-        }
-
-        .button.secondary {
-            background: #6c757d;
-            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.2);
-        }
-
-        .button.success {
-            background: #28a745;
-            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
-        }
-
-        .button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-
-        .status-message {
-            padding: 16px;
-            border-radius: 14px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 14px;
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .status-success {
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-            border: 1px solid rgba(40, 167, 69, 0.2);
-        }
-
-        .status-warning {
-            background: rgba(255, 193, 7, 0.1);
-            color: #ffc107;
-            border: 1px solid rgba(255, 193, 7, 0.2);
-        }
-
-        .status-error {
-            background: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
-            border: 1px solid rgba(220, 53, 69, 0.2);
-        }
-
-        .status-info {
-            background: rgba(51, 144, 236, 0.1);
-            color: #3390ec;
-            border: 1px solid rgba(51, 144, 236, 0.2);
-        }
-
-        .loading {
-            text-align: center;
-            margin: 20px 0;
-            display: none;
-        }
-
-        .loader {
-            border: 3px solid rgba(51, 144, 236, 0.2);
-            border-top: 3px solid var(--tg-theme-button-color);
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 12px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(0, 0, 0, 0.08);
-            color: var(--tg-theme-hint-color);
-            font-size: 12px;
-            line-height: 1.5;
-        }
-
-        .footer a {
-            color: var(--tg-theme-link-color);
-            text-decoration: none;
-        }
-
-        .footer a:hover {
-            text-decoration: underline;
-        }
-
-        .action-buttons {
-            margin: 25px 0;
-        }
-
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            margin: 20px 0;
-            padding: 15px;
-            background: var(--tg-theme-secondary-bg-color);
-            border-radius: 14px;
-            text-align: center;
-        }
-
-        .stat-item {
-            flex: 1;
-        }
-
-        .stat-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--tg-theme-button-color);
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: var(--tg-theme-hint-color);
-            margin-top: 4px;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-
-        .badge-success {
-            background: rgba(40, 167, 69, 0.2);
-            color: #28a745;
-        }
-
-        .badge-warning {
-            background: rgba(255, 193, 7, 0.2);
-            color: #ffc107;
-        }
-
-        .badge-info {
-            background: rgba(51, 144, 236, 0.2);
-            color: #3390ec;
-        }
-
-        .debug-info {
-            background: var(--tg-theme-secondary-bg-color);
-            padding: 12px;
-            border-radius: 12px;
-            margin-top: 20px;
-            font-size: 12px;
-            color: var(--tg-theme-hint-color);
-            display: block;
-            white-space: pre-wrap;
-            word-break: break-all;
-            font-family: monospace;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .debug-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .debug-toggle {
-            background: none;
-            border: none;
-            color: var(--tg-theme-link-color);
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 10px;
-            }
-
-            .logo {
-                width: 60px;
-                height: 60px;
-                font-size: 24px;
-            }
-
-            h1 {
-                font-size: 22px;
-            }
-
-            .button {
-                padding: 14px;
-                font-size: 15px;
-            }
-        }
-
-        /* ===============================
-           REDIRECT ANIMATION
-        ================================ */
-        .redirect-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(6px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-        }
-
-        .redirect-overlay.show {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .redirect-card {
-            background: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            border-radius: 20px;
-            padding: 28px 24px;
-            text-align: center;
-            width: 260px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            transform: scale(0.8) translateY(20px);
-            opacity: 0;
-            animation: redirectCardIn 0.5s cubic-bezier(.2,.8,.2,1) forwards;
-        }
-
-        .redirect-icon {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 14px;
-            background: linear-gradient(135deg, #3390ec, #6aa9ff);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 26px;
-            box-shadow: 0 6px 20px rgba(51, 144, 236, 0.4);
-            animation: pulse 1.2s infinite ease-in-out;
-        }
-
-        .redirect-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .redirect-text {
-            font-size: 14px;
-            color: var(--tg-theme-hint-color);
-        }
-
-        @keyframes redirectCardIn {
-            to {
-                transform: scale(1) translateY(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-            100% { transform: scale(1); }
-        }
-    </style>
+    .step.done .step-title,
+    .step.active .step-title {
+      color: var(--text);
+    }
+  </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">TP</div>
-            <h1 id="page-title">Отклик на задание</h1>
-            <div class="subtitle" id="subtitle">Загрузка…</div>
-        </div>
+  <div class="app">
+    <div id="stepper" class="stepper"></div>
+  </div>
 
-        <div class="status-message status-info" id="initial-status">
-            <i class="fas fa-sync-alt fa-spin"></i> Загружаем данные задания...
-        </div>
+  <script>
+    /**********************************************************
+     * CONFIG
+     **********************************************************/
+    const BACKEND_URL = "https://5-129-200-89.nip.io";
+    const API_TRACK = BACKEND_URL + "/api/track";
 
-        <div class="info-card" id="task-info" style="display: none;">
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-hashtag"></i> ID задания:
-                </span>
-                <span class="info-value" id="post-id">-</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-user-shield"></i> Администратор:
-                </span>
-                <span class="info-value" id="admin-info">-</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-user"></i> Ваш ID:
-                </span>
-                <span class="info-value" id="user-id">-</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-info-circle"></i> Статус:
-                </span>
-                <span class="info-value" id="task-status">
-                    <span class="badge badge-info">Ожидание</span>
-                </span>
-            </div>
-        </div>
+    const tg = window.Telegram.WebApp;
 
-        <div class="status-message" id="status-message"></div>
+    let parsedParams = null;
+    let tgUser = null;
 
-        <div class="loading" id="loading">
-            <div class="loader"></div>
-            <div>Обрабатываем ваш отклик...</div>
-        </div>
+    /**********************************************************
+     * STEPPER
+     **********************************************************/
+    const STEPS = [
+      { id: "load", title: "Загрузка задания" },
+      { id: "check", title: "Проверка пользователя" },
+      { id: "track", title: "Фиксация отклика" },
+      { id: "redirect", title: "Переадресация" }
+    ];
 
-        <div class="action-buttons">
-            <button class="button" id="track-button" onclick="handleClick()" disabled>
-                <i class="fas fa-check-circle"></i> Откликнуться на задание
-            </button>
-        </div>
+    function renderStepper(activeIndex) {
+      const root = document.getElementById("stepper");
+      root.innerHTML = "";
 
-        <!-- Debug (чтобы updateDebugInfo не падал) -->
-        <div class="debug-info">
-            <div class="debug-header">
-                <strong>Debug</strong>
-                <button class="debug-toggle" onclick="toggleDebug()">Свернуть</button>
-            </div>
-            <div id="debug-content"></div>
-        </div>
-    </div>
+      STEPS.forEach((step, index) => {
+        let state = "pending";
+        if (index < activeIndex) state = "done";
+        if (index === activeIndex) state = "active";
 
-    <!-- Redirect overlay -->
-    <div class="redirect-overlay" id="redirect-overlay">
-        <div class="redirect-card">
-            <div class="redirect-icon">
-                <i class="fas fa-paper-plane"></i>
-            </div>
-            <div class="redirect-title">Готово!</div>
-            <div class="redirect-text">Переходим в чат…</div>
-        </div>
-    </div>
+        const el = document.createElement("div");
+        el.className = `step ${state}`;
 
-    <script>
-        // ============================================
-        // КОНФИГУРАЦИЯ БЭКЕНДА
-        // ============================================
-
-        const BACKEND_URL = 'https://5-129-200-89.nip.io';
-        const API_ENDPOINTS = {
-            track: `${BACKEND_URL}/track`,
-            apiTrack: `${BACKEND_URL}/api/track`,
-            postInfo: `${BACKEND_URL}/posts`,
-            adminStats: `${BACKEND_URL}/admin`,
-            health: `${BACKEND_URL}/health`
-        };
-
-        // ============================================
-        // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-        // ============================================
-
-        const tg = window.Telegram.WebApp;
-        let postId = null;
-        let adminId = null;
-        let adminUsername = null;
-        let ref = null;
-        let platform = 'tg';
-        let tgUserId = null;
-        let tgUser = null;
-        let parsedParams = {};
-        let hasClicked = false;
-        let isDebugVisible = true;
-
-        // ============================================
-        // TELEGRAM INIT
-        // ============================================
-
-        function initTelegram() {
-            try {
-                tg.ready();
-                tg.expand();
-                tg.enableClosingConfirmation();
-
-                if (tg.themeParams) {
-                    document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
-                    document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
-                    document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#999999');
-                    document.documentElement.style.setProperty('--tg-theme-link-color', tg.themeParams.link_color || '#3390ec');
-                    document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#3390ec');
-                    document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
-                    document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#f1f1f1');
-
-                    tg.setHeaderColor(tg.themeParams.bg_color);
-                    tg.setBackgroundColor(tg.themeParams.bg_color);
-                }
-
-                if (tg.initDataUnsafe?.user) {
-                    tgUser = tg.initDataUnsafe.user;
-                    tgUserId = tgUser.id.toString();
-                    console.log("Telegram user data:", tgUser);
-                } else {
-                    console.warn("No Telegram user data available");
-                }
-
-                return true;
-            } catch (error) {
-                console.error("Ошибка инициализации Telegram:", error);
-                return false;
+        el.innerHTML = `
+          <div class="step-rail">
+            <div class="step-dot"></div>
+            ${
+              index < STEPS.length - 1
+                ? `<div class="step-line"></div>`
+                : ""
             }
-        }
-
-        // ============================================
-        // PARSE PARAMS
-        // ============================================
-
-        function parseTelegramParams() {
-            console.log("=== ПАРСИНГ ПАРАМЕТРОВ ===");
-
-            let startParam = null;
-
-            if (tg.initDataUnsafe?.tgWebAppStartParam) {
-                startParam = tg.initDataUnsafe.tgWebAppStartParam;
-                console.log("Параметр из tgWebAppStartParam:", startParam);
-            } else if (tg.initDataUnsafe?.start_param) {
-                startParam = tg.initDataUnsafe.start_param;
-                console.log("Параметр из start_param:", startParam);
-            }
-
-            if (!startParam) {
-                const urlParams = new URLSearchParams(window.location.search);
-                const testParam = urlParams.get('test');
-                const startapp = urlParams.get('startapp');
-
-                if (testParam) {
-                    startParam = testParam;
-                    console.log("Параметр из URL (test):", startParam);
-                } else if (startapp) {
-                    startParam = startapp;
-                    console.log("Параметр из URL (startapp):", startParam);
-                }
-            }
-
-            if (!startParam) {
-                console.warn("Параметры не найдены!");
-                showStatus('Запустите через канал!', 'error');
-                return null;
-            }
-
-            let cleanParam = startParam;
-            if (cleanParam.startsWith('?')) cleanParam = cleanParam.substring(1);
-            if (cleanParam.includes('tgWebAppStartParam=')) {
-                cleanParam = cleanParam.split('tgWebAppStartParam=')[1];
-            }
-
-            console.log("Очищенный параметр:", cleanParam);
-
-            const parts = cleanParam.split('_');
-
-            if (parts.length >= 2) {
-                try {
-                    postId = parseInt(parts[0]);
-                    adminId = parseInt(parts[1]);
-                    ref = parts.length > 2 ? parts[2] : null;
-                    platform = parts.length > 3 ? parts[3] : 'tg';
-
-                    parsedParams = {
-                        post_id: postId,
-                        admin_id: adminId,
-                        ref: ref,
-                        platform: platform,
-                        raw_param: cleanParam,
-                        parsed_successfully: true
-                    };
-
-                    console.log("Успешно распарсено:", parsedParams);
-                    return parsedParams;
-
-                } catch (error) {
-                    console.error("Ошибка парсинга:", error);
-                    showStatus('Ошибка: Неверный формат параметров', 'error');
-                    return {
-                        parsed_successfully: false,
-                        error: error.message
-                    };
-                }
-            } else {
-                console.warn("Неверный формат параметра");
-                showStatus('Ошибка: Неверный формат параметров', 'error');
-                return {
-                    parsed_successfully: false,
-                    error: "Неверный формат параметра"
-                };
-            }
-        }
-
-        // ============================================
-        // UI UPDATE
-        // ============================================
-
-        function updateUI() {
-            const postIdElement = document.getElementById('post-id');
-            const adminInfoElement = document.getElementById('admin-info');
-            const userIdElement = document.getElementById('user-id');
-            const taskStatusElement = document.getElementById('task-status');
-            const trackButton = document.getElementById('track-button');
-            const subtitleElement = document.getElementById('subtitle');
-            const pageTitleElement = document.getElementById('page-title');
-            const taskInfoCard = document.getElementById('task-info');
-            const initialStatus = document.getElementById('initial-status');
-
-            if (parsedParams && parsedParams.parsed_successfully) {
-                initialStatus.style.display = 'none';
-                taskInfoCard.style.display = 'block';
-
-                postIdElement.textContent = parsedParams.post_id;
-                adminInfoElement.textContent = `ID: ${parsedParams.admin_id}`;
-
-                if (tgUser) {
-                    userIdElement.textContent = tgUser.id;
-                    if (tgUser.username) {
-                        userIdElement.textContent += ` (@${tgUser.username})`;
-                    }
-                } else {
-                    userIdElement.textContent = 'Гость';
-                }
-
-                subtitleElement.textContent = `Задание #${parsedParams.post_id}`;
-                pageTitleElement.textContent = `Задание #${parsedParams.post_id}`;
-
-                trackButton.disabled = false;
-                trackButton.innerHTML = '<i class="fas fa-check-circle"></i> Откликнуться на задание';
-
-                taskStatusElement.innerHTML = '<span class="badge badge-success">Готово к отклику</span>';
-
-                updateDebugInfo();
-            } else {
-                initialStatus.style.display = 'none';
-                taskStatusElement.innerHTML = '<span class="badge badge-warning">Ошибка загрузки</span>';
-                trackButton.disabled = true;
-                updateDebugInfo();
-            }
-        }
-
-        function updateDebugInfo() {
-            const debugContent = document.getElementById('debug-content');
-            if (!debugContent) return;
-
-            const debugData = {
-                "Backend URL": BACKEND_URL,
-                "Post ID": postId,
-                "Admin ID": adminId,
-                "Ref": ref,
-                "Platform": platform,
-                "User ID": tgUserId,
-                "Username": tgUser?.username || 'Нет',
-                "First Name": tgUser?.first_name || 'Нет',
-                "Last Name": tgUser?.last_name || 'Нет',
-                "Telegram Platform": tg.platform,
-                "Telegram Version": tg.version,
-                "Parsed Params": parsedParams,
-                "Telegram Start Param": tg.initDataUnsafe?.tgWebAppStartParam || 'Нет'
-            };
-
-            debugContent.innerHTML = Object.entries(debugData)
-                .map(([key, value]) => {
-                    const formattedValue = typeof value === 'object'
-                        ? JSON.stringify(value, null, 2)
-                        : String(value);
-                    return `<strong>${key}:</strong> ${formattedValue}`;
-                })
-                .join('<br>');
-        }
-
-        function toggleDebug() {
-            const debugContent = document.getElementById('debug-content');
-            const debugToggle = document.querySelector('.debug-toggle');
-
-            if (!debugContent || !debugToggle) return;
-
-            if (isDebugVisible) {
-                debugContent.style.display = 'none';
-                debugToggle.textContent = 'Развернуть';
-            } else {
-                debugContent.style.display = 'block';
-                debugToggle.textContent = 'Свернуть';
-            }
-
-            isDebugVisible = !isDebugVisible;
-        }
-
-        // ============================================
-        // REDIRECT ANIMATION
-        // ============================================
-
-        function showRedirectAnimation(callback, delay = 1200) {
-            const overlay = document.getElementById('redirect-overlay');
-            if (!overlay) {
-                callback();
-                return;
-            }
-            overlay.classList.add('show');
-            setTimeout(() => callback(), delay);
-        }
-
-        // ============================================
-        // MAIN CLICK
-        // ============================================
-
-        async function handleClick() {
-            if (hasClicked) {
-                showStatus('Вы уже откликнулись на это задание', 'warning');
-                return;
-            }
-
-            if (!parsedParams || !parsedParams.parsed_successfully) {
-                showStatus('Ошибка: Нет данных задания', 'error');
-                return;
-            }
-
-            hasClicked = true;
-
-            const trackButton = document.getElementById('track-button');
-            const loading = document.getElementById('loading');
-            const statusMessage = document.getElementById('status-message');
-
-            trackButton.disabled = true;
-            trackButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
-            loading.style.display = 'block';
-            statusMessage.style.display = 'none';
-
-            try {
-                console.log("Отправка данных на бэкенд:", API_ENDPOINTS.apiTrack);
-
-                const requestData = {
-                    startapp: parsedParams.raw_param,
-                    post_id: parsedParams.post_id,
-                    admin_id: parsedParams.admin_id,
-                    tg_user_id: tgUserId,
-                    ref: parsedParams.ref || 'direct',
-                    platform: parsedParams.platform,
-                    source: 'mini_app',
-                    timestamp: new Date().toISOString()
-                };
-
-                if (tgUser) {
-                    requestData.user_data = {
-                        id: tgUser.id,
-                        username: tgUser.username,
-                        first_name: tgUser.first_name,
-                        last_name: tgUser.last_name,
-                        language_code: tgUser.language_code,
-                        is_premium: tgUser.is_premium || false
-                    };
-                    console.log("User data added to request:", requestData.user_data);
-                }
-
-                console.log("Данные запроса:", requestData);
-
-                const response = await fetch(API_ENDPOINTS.apiTrack, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(requestData)
-                });
-
-                console.log("Статус ответа:", response.status);
-
-                let data;
-                try {
-                    data = await response.json();
-                    console.log("Ответ от бэкенда:", data);
-                } catch (jsonError) {
-                    console.error("Ошибка парсинга JSON:", jsonError);
-                    throw new Error('Ошибка формата ответа от сервера');
-                }
-
-                if (!response.ok) {
-                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
-                }
-
-                loading.style.display = 'none';
-
-                if (data.success) {
-                    const taskStatusElement = document.getElementById('task-status');
-
-                    const username = data.admin_username?.replace('@', '') || 'shardlightspace_bot';
-                    const text = `Здравствуйте! Я по поводу задания на ${platform}`;
-                    const url = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
-
-                    if (data.click_counted && data.is_unique) {
-                        showStatus('✅ Успешно! Ваш отклик засчитан. Перенаправляем...', 'success');
-                        taskStatusElement.innerHTML = '<span class="badge badge-success">Отклик принят</span>';
-                        trackButton.innerHTML = '<i class="fas fa-check-double"></i> Отклик засчитан';
-                        trackButton.classList.add('success');
-
-                        showRedirectAnimation(() => {
-                            tg.openTelegramLink(url);
-                        });
-
-                    } else if (data.click_counted && !data.is_unique) {
-                        showStatus('⚠️ Вы уже откликались на это задание ранее. Перенаправляем...', 'warning');
-                        taskStatusElement.innerHTML = '<span class="badge badge-warning">Повторный отклик</span>';
-                        trackButton.innerHTML = '<i class="fas fa-redo"></i> Повторный отклик';
-
-                        showRedirectAnimation(() => {
-                            tg.openTelegramLink(url);
-                        }, 1400);
-
-                    } else {
-                        showStatus('Ошибка: Клик не засчитан', 'error');
-                        trackButton.innerHTML = '<i class="fas fa-redo"></i> Попробовать снова';
-                        trackButton.disabled = false;
-                        hasClicked = false;
-                    }
-                } else {
-                    showStatus(`Ошибка: ${data.error || 'Неизвестная ошибка'}`, 'error');
-                    trackButton.innerHTML = '<i class="fas fa-redo"></i> Попробовать снова';
-                    trackButton.disabled = false;
-                    hasClicked = false;
-                }
-
-            } catch (error) {
-                console.error("Ошибка при отправке запроса:", error);
-                loading.style.display = 'none';
-
-                showStatus('Ошибка соединения с сервером', 'error');
-                trackButton.innerHTML = '<i class="fas fa-redo"></i> Попробовать снова';
-                trackButton.disabled = false;
-                hasClicked = false;
-
-                setTimeout(() => {
-                    tg.openTelegramLink('tg://resolve?domain=shardlightspace_bot');
-                }, 3000);
-            }
-        }
-
-        // ============================================
-        // HELPERS
-        // ============================================
-
-        function showStatus(message, type) {
-            const statusMessage = document.getElementById('status-message');
-            statusMessage.textContent = message;
-            statusMessage.className = 'status-message';
-
-            let icon = '';
-            switch(type) {
-                case 'success':
-                    statusMessage.classList.add('status-success');
-                    icon = '<i class="fas fa-check-circle"></i> ';
-                    break;
-                case 'warning':
-                    statusMessage.classList.add('status-warning');
-                    icon = '<i class="fas fa-exclamation-triangle"></i> ';
-                    break;
-                case 'error':
-                    statusMessage.classList.add('status-error');
-                    icon = '<i class="fas fa-times-circle"></i> ';
-                    break;
-                case 'info':
-                    statusMessage.classList.add('status-info');
-                    icon = '<i class="fas fa-info-circle"></i> ';
-                    break;
-            }
-
-            statusMessage.innerHTML = icon + message;
-            statusMessage.style.display = 'block';
-        }
-
-        function openSupport() {
-            tg.openTelegramLink('https://t.me/shardhelp_bot');
-        }
-
-        // ============================================
-        // INIT
-        // ============================================
-
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log("=== ИНИЦИАЛИЗАЦИЯ SHARD TASKS ===");
-
-            try {
-                const telegramReady = initTelegram();
-                if (!telegramReady) {
-                    showStatus('Ошибка инициализации Telegram', 'error');
-                    return;
-                }
-
-                parsedParams = parseTelegramParams();
-
-                setTimeout(updateUI, 500);
-
-                setTimeout(async () => {
-                    try {
-                        const healthResponse = await fetch(API_ENDPOINTS.health);
-                        if (healthResponse.ok) {
-                            console.log("Бэкенд доступен");
-                        } else {
-                            console.warn("Бэкенд недоступен");
-                            showStatus('⚠️ Сервер временно недоступен', 'warning');
-                        }
-                    } catch (error) {
-                        console.warn("Не удалось проверить бэкенд:", error);
-                    }
-                }, 1000);
-
-                console.log("Приложение инициализировано");
-
-            } catch (error) {
-                console.error("Критическая ошибка при инициализации:", error);
-                showStatus('Критическая ошибка при загрузке', 'error');
-            }
-        });
-
-        tg.onEvent('themeChanged', () => {
-            if (tg.themeParams) {
-                document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color);
-                document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color);
-                tg.setHeaderColor(tg.themeParams.bg_color);
-                tg.setBackgroundColor(tg.themeParams.bg_color);
-            }
-        });
-    </script>
+          </div>
+          <div class="step-title">${step.title}</div>
+        `;
+
+        root.appendChild(el);
+      });
+    }
+
+    /**********************************************************
+     * TELEGRAM INIT
+     **********************************************************/
+    function initTelegram() {
+      tg.ready();
+      tg.expand();
+      tg.setBackgroundColor("#000000");
+      tg.setHeaderColor("#000000");
+
+      if (tg.initDataUnsafe?.user) {
+        tgUser = tg.initDataUnsafe.user;
+      }
+    }
+
+    /**********************************************************
+     * PARAM PARSE
+     **********************************************************/
+    function parseParams() {
+      let startParam =
+        tg.initDataUnsafe?.tgWebAppStartParam ||
+        tg.initDataUnsafe?.start_param;
+
+      if (!startParam) {
+        const urlParams = new URLSearchParams(window.location.search);
+        startParam = urlParams.get("test");
+      }
+
+      if (!startParam) return null;
+
+      const clean = startParam.replace("tgWebAppStartParam=", "");
+      const parts = clean.split("_");
+
+      return {
+        raw: clean,
+        post_id: parseInt(parts[0]),
+        admin_id: parseInt(parts[1]),
+        ref: parts[2] || "direct",
+        platform: parts[3] || "tg"
+      };
+    }
+
+    /**********************************************************
+     * AUTO FLOW (NO BUTTON)
+     **********************************************************/
+    async function autoFlow() {
+      // step 0
+      renderStepper(0);
+
+      await delay(400);
+      renderStepper(1);
+
+      await delay(400);
+      renderStepper(2);
+
+      const payload = {
+        startapp: parsedParams.raw,
+        post_id: parsedParams.post_id,
+        admin_id: parsedParams.admin_id,
+        tg_user_id: tgUser?.id?.toString(),
+        ref: parsedParams.ref,
+        platform: parsedParams.platform,
+        source: "mini_app",
+        timestamp: new Date().toISOString(),
+        user_data: tgUser || null
+      };
+
+      const res = await fetch(API_TRACK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (!data.success) return;
+
+      renderStepper(3);
+
+      const username = data.admin_username?.replace("@", "");
+      const text = `Здравствуйте! Я по поводу задания на ${parsedParams.platform}`;
+      const url = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
+
+      tg.openTelegramLink(url);
+    }
+
+    function delay(ms) {
+      return new Promise((r) => setTimeout(r, ms));
+    }
+
+    /**********************************************************
+     * BOOT
+     **********************************************************/
+    document.addEventListener("DOMContentLoaded", () => {
+      initTelegram();
+      parsedParams = parseParams();
+
+      renderStepper(0);
+
+      if (parsedParams) {
+        autoFlow();
+      }
+    });
+  </script>
 </body>
 </html>
