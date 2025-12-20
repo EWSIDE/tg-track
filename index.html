@@ -135,6 +135,19 @@
             display: flex;
             justify-content: center;
         }
+        
+        .bottom-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            display: none;
+        }
+        
+        .bottom-button .ios-button {
+            margin-top: 0;
+            max-width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -147,19 +160,19 @@
     <div id="retry-button-container" class="button-container" style="display: none;"></div>
 </div>
 
+<div id="bottom-retry-button" class="bottom-button">
+    <button class="ios-button" onclick="retryRedirect()">
+        Попробовать снова
+    </button>
+</div>
+
 <script>
-    // ============================================
-    // КОНФИГУРАЦИЯ БЭКЕНДА
-    // ============================================
     const BACKEND_URL = 'https://5-129-200-89.nip.io';
     const API_ENDPOINTS = {
         apiTrack: `${BACKEND_URL}/api/track`,
         health: `${BACKEND_URL}/health`
     };
 
-    // ============================================
-    // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-    // ============================================
     const tg = window.Telegram.WebApp;
 
     let postId = null;
@@ -173,123 +186,8 @@
     let parsedParams = {};
     let isProcessing = false;
     let retryButtonTimeout = null;
+    let bottomButtonTimeout = null;
 
-    // ============================================
-    // ДЕТЕКТИРОВАНИЕ ПЛАТФОРМЫ
-    // ============================================
-    function detectPlatform() {
-        const ua = navigator.userAgent;
-        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-        const isAndroid = /Android/.test(ua);
-        const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua);
-        
-        return {
-            isIOS,
-            isAndroid,
-            isSafari,
-            isTelegram: /Telegram/.test(ua),
-            userAgent: ua
-        };
-    }
-
-    // Проверка возможности открытия Telegram ссылок
-    function canOpenTelegramLinks() {
-        const platformInfo = detectPlatform();
-        
-        if (platformInfo.isIOS && platformInfo.isSafari) {
-            // iOS Safari имеет ограничения на открытие tg:// ссылок
-            return false;
-        }
-        
-        return true;
-    }
-
-    // Улучшенный метод открытия ссылок для iOS
-    function openLinkForIOS(url) {
-        console.log("Using iOS-specific link opening method");
-        
-        // Метод 1: iframe (работает в большинстве случаев на iOS)
-        try {
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.style.visibility = 'hidden';
-            iframe.style.position = 'absolute';
-            iframe.style.width = '0';
-            iframe.style.height = '0';
-            iframe.style.border = 'none';
-            iframe.src = url;
-            document.body.appendChild(iframe);
-            
-            // Убираем iframe через 3 секунды
-            setTimeout(() => {
-                if (iframe.parentNode) {
-                    iframe.parentNode.removeChild(iframe);
-                }
-            }, 3000);
-        } catch (e) {
-            console.error("iframe method failed:", e);
-        }
-        
-        // Метод 2: window.open с небольшой задержкой
-        setTimeout(() => {
-            try {
-                window.open(url, '_blank');
-            } catch (e) {
-                console.error("window.open failed:", e);
-            }
-        }, 50);
-        
-        // Метод 3: window.location как фоллбэк
-        setTimeout(() => {
-            if (document.visibilityState !== 'hidden') {
-                try {
-                    window.location.href = url;
-                } catch (e) {
-                    console.error("window.location failed:", e);
-                }
-            }
-        }, 100);
-        
-        return true;
-    }
-
-    // Универсальный метод открытия ссылок
-    function openUniversalLink(url) {
-        const platformInfo = detectPlatform();
-        console.log("Platform info:", platformInfo);
-        
-        if (platformInfo.isIOS) {
-            return openLinkForIOS(url);
-        }
-        
-        // Для Android и других платформ
-        try {
-            // Сначала пробуем через Telegram Web App API
-            if (tg && tg.openTelegramLink) {
-                tg.openTelegramLink(url);
-            } else {
-                // Фоллбэк для не-Telegram окружения
-                window.open(url, '_blank');
-            }
-            
-            // Дополнительный фоллбэк
-            setTimeout(() => {
-                if (document.visibilityState !== 'hidden') {
-                    window.open(url, '_blank');
-                }
-            }, 2000);
-            
-            return true;
-        } catch (error) {
-            console.error("Error opening link:", error);
-            window.location.href = url;
-            return false;
-        }
-    }
-
-    // ============================================
-    // ТЕЛЕГРАМ
-    // ============================================
     function initTelegram() {
         try {
             tg.ready();
@@ -298,33 +196,28 @@
             if (tg.initDataUnsafe?.user) {
                 tgUser = tg.initDataUnsafe.user;
                 tgUserId = tgUser.id?.toString() || null;
-                console.log("Telegram user data:", tgUser);
             }
+
+            // Показываем кнопку внизу экрана через 5000 ms
+            bottomButtonTimeout = setTimeout(() => {
+                document.getElementById('bottom-retry-button').style.display = 'block';
+            }, 5000);
 
             return true;
         } catch (error) {
-            console.error("Ошибка инициализации Telegram:", error);
             return false;
         }
     }
 
-    // ============================================
-    // ПАРСИНГ ПАРАМЕТРОВ
-    // ============================================
     function parseTelegramParams() {
-        console.log("=== ПАРСИНГ ПАРАМЕТРОВ ===");
-
         let startParam = null;
 
         if (tg.initDataUnsafe?.tgWebAppStartParam) {
             startParam = tg.initDataUnsafe.tgWebAppStartParam;
-            console.log("Параметр из tgWebAppStartParam:", startParam);
         } else if (tg.initDataUnsafe?.start_param) {
             startParam = tg.initDataUnsafe.start_param;
-            console.log("Параметр из start_param:", startParam);
         }
 
-        // URL fallback (для теста)
         if (!startParam) {
             const urlParams = new URLSearchParams(window.location.search);
             const testParam = urlParams.get('test');
@@ -332,10 +225,8 @@
 
             if (testParam) {
                 startParam = testParam;
-                console.log("Параметр из URL (test):", startParam);
             } else if (startapp) {
                 startParam = startapp;
-                console.log("Параметр из URL (startapp):", startParam);
             }
         }
 
@@ -344,16 +235,12 @@
             return null;
         }
 
-        // очистка
         let cleanParam = startParam;
         if (cleanParam.startsWith('?')) cleanParam = cleanParam.substring(1);
         if (cleanParam.includes('tgWebAppStartParam=')) {
             cleanParam = cleanParam.split('tgWebAppStartParam=')[1];
         }
 
-        console.log("Очищенный параметр:", cleanParam);
-
-        // формат: postid_adminid_ref_platform
         const parts = cleanParam.split('_');
 
         if (parts.length >= 2) {
@@ -377,11 +264,9 @@
                     parsed_successfully: true
                 };
 
-                console.log("Успешно распарсено:", parsedParams);
                 return parsedParams;
 
             } catch (error) {
-                console.error("Ошибка парсинга:", error);
                 showError('Ошибка: Неверный формат параметров');
                 return null;
             }
@@ -391,9 +276,6 @@
         }
     }
 
-    // ============================================
-    // ОСНОВНАЯ ФУНКЦИЯ
-    // ============================================
     async function performRedirect() {
         if (isProcessing) return;
         isProcessing = true;
@@ -401,8 +283,6 @@
         updateMessage('Отправка данных на сервер...');
 
         try {
-            console.log("Отправка данных на бэкенд:", API_ENDPOINTS.apiTrack);
-
             const requestData = {
                 startapp: parsedParams.raw_param,
                 post_id: parsedParams.post_id,
@@ -425,8 +305,6 @@
                 };
             }
 
-            console.log("Данные запроса:", requestData);
-
             const response = await fetch(API_ENDPOINTS.apiTrack, {
                 method: 'POST',
                 headers: {
@@ -436,14 +314,10 @@
                 body: JSON.stringify(requestData)
             });
 
-            console.log("Статус ответа:", response.status);
-
             let data;
             try {
                 data = await response.json();
-                console.log("Ответ от бэкенда:", data);
             } catch (jsonError) {
-                console.error("Ошибка парсинга JSON:", jsonError);
                 throw new Error('Ошибка формата ответа от сервера');
             }
 
@@ -455,11 +329,10 @@
 
             const text = 'Здравствуйте, я с канала SHARD по поводу задания!';
 
-            // ✅ ВСЕГДА ИСПОЛЬЗУЕМ https://t.me/
             const username = data.username || 'shardtask_bot';
+            
             let redirectUrl = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
             
-            // Если бэкенд вернул redirect_url, проверяем что это https://t.me/
             if (data.redirect_url && data.redirect_url.startsWith('https://t.me/')) {
                 redirectUrl = data.redirect_url;
                 if (!redirectUrl.includes('?text=')) {
@@ -468,73 +341,30 @@
                     redirectUrl = `${redirectUrl}${sep}text=${encodeURIComponent(text)}`;
                 }
             }
-            
-            console.log("Final redirect URL:", redirectUrl);
-            console.log("Platform detection:", detectPlatform());
 
-            // Задержка перед редиректом для лучшего UX
+            console.log("Redirecting to:", redirectUrl);
+
             setTimeout(() => {
                 try {
-                    // Используем универсальный метод открытия ссылок
-                    const opened = openUniversalLink(redirectUrl);
+                    tg.openTelegramLink(redirectUrl);
                     
-                    if (!opened) {
-                        // Если не удалось открыть, показываем инструкцию для iOS
-                        const platformInfo = detectPlatform();
-                        if (platformInfo.isIOS) {
-                            showError(
-                                'Нажмите кнопку ниже чтобы открыть Telegram<br><br>' +
-                                '<small>На iOS иногда требуется ручное подтверждение</small>', 
-                                true
-                            );
-                            
-                            // Создаем кнопку для ручного открытия
-                            const buttonContainer = document.getElementById('retry-button-container');
-                            buttonContainer.innerHTML = `
-                                <button class="ios-button" onclick="window.open('${redirectUrl}', '_blank')">
-                                    Открыть в Telegram
-                                </button>
-                            `;
-                            buttonContainer.style.display = 'flex';
-                        }
-                    }
-                    
-                    // Закрываем Web App через 3 секунды если все успешно
                     setTimeout(() => {
-                        if (tg && tg.close) {
-                            try {
-                                tg.close();
-                            } catch (e) {
-                                console.log("Could not close Web App");
-                            }
+                        if (document.visibilityState !== 'hidden') {
+                            window.open(redirectUrl, '_blank');
                         }
-                    }, 3000);
+                    }, 2000);
                     
                 } catch (error) {
-                    console.error("Critical error in redirect:", error);
-                    showError('Ошибка при открытии Telegram. Попробуйте вручную.', true);
-                    
-                    // Показываем кнопку для ручного открытия
-                    const buttonContainer = document.getElementById('retry-button-container');
-                    buttonContainer.innerHTML = `
-                        <button class="ios-button" onclick="window.open('${redirectUrl}', '_blank')">
-                            Открыть в Telegram вручную
-                        </button>
-                    `;
-                    buttonContainer.style.display = 'flex';
+                    window.location.href = redirectUrl;
                 }
-            }, 800); // Увеличенная задержка для iOS
+            }, 500);
 
         } catch (error) {
-            console.error("Ошибка при отправке запроса:", error);
             showError('Ошибка соединения с сервером. Попробуйте еще раз.', true);
             isProcessing = false;
         }
     }
 
-    // ============================================
-    // UI HELPERS
-    // ============================================
     function updateMessage(text) {
         const messageElement = document.getElementById('message');
         if (messageElement) messageElement.textContent = text;
@@ -570,10 +400,13 @@
                 </button>
             `;
             buttonContainer.style.display = 'flex';
-        }, 7000); // 7 секунд
+        }, 7000);
     }
 
     function retryRedirect() {
+        clearTimeout(bottomButtonTimeout);
+        document.getElementById('bottom-retry-button').style.display = 'none';
+
         const loadingElement = document.getElementById('loading');
         const errorContainer = document.getElementById('error-container');
         const buttonContainer = document.getElementById('retry-button-container');
@@ -588,14 +421,7 @@
         setTimeout(() => performRedirect(), 500);
     }
 
-    // ============================================
-    // INIT
-    // ============================================
     document.addEventListener('DOMContentLoaded', async function() {
-        console.log("=== ИНИЦИАЛИЗАЦИЯ TRAFFPOST ===");
-        console.log("User Agent:", navigator.userAgent);
-        console.log("Platform detection:", detectPlatform());
-
         try {
             const telegramReady = initTelegram();
             if (!telegramReady) {
@@ -606,14 +432,9 @@
             parsedParams = parseTelegramParams();
             if (!parsedParams || !parsedParams.parsed_successfully) return;
 
-            // Для iOS добавляем дополнительную задержку
-            const platformInfo = detectPlatform();
-            const delay = platformInfo.isIOS ? 1500 : 1000;
-            
-            setTimeout(() => performRedirect(), delay);
+            setTimeout(() => performRedirect(), 1000);
 
         } catch (error) {
-            console.error("Критическая ошибка при инициализации:", error);
             showError('Критическая ошибка при загрузке', true);
         }
     });
