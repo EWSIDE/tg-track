@@ -175,6 +175,119 @@
     let retryButtonTimeout = null;
 
     // ============================================
+    // ДЕТЕКТИРОВАНИЕ ПЛАТФОРМЫ
+    // ============================================
+    function detectPlatform() {
+        const ua = navigator.userAgent;
+        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        const isAndroid = /Android/.test(ua);
+        const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua);
+        
+        return {
+            isIOS,
+            isAndroid,
+            isSafari,
+            isTelegram: /Telegram/.test(ua),
+            userAgent: ua
+        };
+    }
+
+    // Проверка возможности открытия Telegram ссылок
+    function canOpenTelegramLinks() {
+        const platformInfo = detectPlatform();
+        
+        if (platformInfo.isIOS && platformInfo.isSafari) {
+            // iOS Safari имеет ограничения на открытие tg:// ссылок
+            return false;
+        }
+        
+        return true;
+    }
+
+    // Улучшенный метод открытия ссылок для iOS
+    function openLinkForIOS(url) {
+        console.log("Using iOS-specific link opening method");
+        
+        // Метод 1: iframe (работает в большинстве случаев на iOS)
+        try {
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.style.visibility = 'hidden';
+            iframe.style.position = 'absolute';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = 'none';
+            iframe.src = url;
+            document.body.appendChild(iframe);
+            
+            // Убираем iframe через 3 секунды
+            setTimeout(() => {
+                if (iframe.parentNode) {
+                    iframe.parentNode.removeChild(iframe);
+                }
+            }, 3000);
+        } catch (e) {
+            console.error("iframe method failed:", e);
+        }
+        
+        // Метод 2: window.open с небольшой задержкой
+        setTimeout(() => {
+            try {
+                window.open(url, '_blank');
+            } catch (e) {
+                console.error("window.open failed:", e);
+            }
+        }, 50);
+        
+        // Метод 3: window.location как фоллбэк
+        setTimeout(() => {
+            if (document.visibilityState !== 'hidden') {
+                try {
+                    window.location.href = url;
+                } catch (e) {
+                    console.error("window.location failed:", e);
+                }
+            }
+        }, 100);
+        
+        return true;
+    }
+
+    // Универсальный метод открытия ссылок
+    function openUniversalLink(url) {
+        const platformInfo = detectPlatform();
+        console.log("Platform info:", platformInfo);
+        
+        if (platformInfo.isIOS) {
+            return openLinkForIOS(url);
+        }
+        
+        // Для Android и других платформ
+        try {
+            // Сначала пробуем через Telegram Web App API
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(url);
+            } else {
+                // Фоллбэк для не-Telegram окружения
+                window.open(url, '_blank');
+            }
+            
+            // Дополнительный фоллбэк
+            setTimeout(() => {
+                if (document.visibilityState !== 'hidden') {
+                    window.open(url, '_blank');
+                }
+            }, 2000);
+            
+            return true;
+        } catch (error) {
+            console.error("Error opening link:", error);
+            window.location.href = url;
+            return false;
+        }
+    }
+
+    // ============================================
     // ТЕЛЕГРАМ
     // ============================================
     function initTelegram() {
@@ -343,15 +456,11 @@
             const text = 'Здравствуйте, я с канала SHARD по поводу задания!';
 
             // ✅ ВСЕГДА ИСПОЛЬЗУЕМ https://t.me/
-            // Получаем username из бэкенда или используем дефолтный
             const username = data.username || 'shardtask_bot';
-            
-            // Формируем https://t.me/ ссылку с текстом
             let redirectUrl = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
             
             // Если бэкенд вернул redirect_url, проверяем что это https://t.me/
             if (data.redirect_url && data.redirect_url.startsWith('https://t.me/')) {
-                // Используем URL от бэкенда, но добавляем текст если его нет
                 redirectUrl = data.redirect_url;
                 if (!redirectUrl.includes('?text=')) {
                     const hasQuery = redirectUrl.includes('?');
@@ -360,33 +469,61 @@
                 }
             }
             
-            // Также можно открыть сразу в чат (без выбора "Отправить")
-            // redirectUrl = `https://t.me/${username}?start=${encodeURIComponent(text)}`;
+            console.log("Final redirect URL:", redirectUrl);
+            console.log("Platform detection:", detectPlatform());
 
-            console.log("Redirecting to:", redirectUrl);
-
+            // Задержка перед редиректом для лучшего UX
             setTimeout(() => {
                 try {
-                    // Используем openTelegramLink для https://t.me/ ссылок
-                    // Это работает на всех платформах в Telegram Mini Apps
-                    tg.openTelegramLink(redirectUrl);
+                    // Используем универсальный метод открытия ссылок
+                    const opened = openUniversalLink(redirectUrl);
                     
-                    // Дополнительный фоллбэк на случай если openTelegramLink не сработал
-                    setTimeout(() => {
-                        // Если через 2 секунды мы все еще на этой странице,
-                        // пробуем открыть в новом окне
-                        if (document.visibilityState !== 'hidden') {
-                            console.log("Fallback: opening in new window");
-                            window.open(redirectUrl, '_blank');
+                    if (!opened) {
+                        // Если не удалось открыть, показываем инструкцию для iOS
+                        const platformInfo = detectPlatform();
+                        if (platformInfo.isIOS) {
+                            showError(
+                                'Нажмите кнопку ниже чтобы открыть Telegram<br><br>' +
+                                '<small>На iOS иногда требуется ручное подтверждение</small>', 
+                                true
+                            );
+                            
+                            // Создаем кнопку для ручного открытия
+                            const buttonContainer = document.getElementById('retry-button-container');
+                            buttonContainer.innerHTML = `
+                                <button class="ios-button" onclick="window.open('${redirectUrl}', '_blank')">
+                                    Открыть в Telegram
+                                </button>
+                            `;
+                            buttonContainer.style.display = 'flex';
                         }
-                    }, 2000);
+                    }
+                    
+                    // Закрываем Web App через 3 секунды если все успешно
+                    setTimeout(() => {
+                        if (tg && tg.close) {
+                            try {
+                                tg.close();
+                            } catch (e) {
+                                console.log("Could not close Web App");
+                            }
+                        }
+                    }, 3000);
                     
                 } catch (error) {
-                    console.error("Error opening Telegram link:", error);
-                    // Фоллбэк: открываем в текущем окне
-                    window.location.href = redirectUrl;
+                    console.error("Critical error in redirect:", error);
+                    showError('Ошибка при открытии Telegram. Попробуйте вручную.', true);
+                    
+                    // Показываем кнопку для ручного открытия
+                    const buttonContainer = document.getElementById('retry-button-container');
+                    buttonContainer.innerHTML = `
+                        <button class="ios-button" onclick="window.open('${redirectUrl}', '_blank')">
+                            Открыть в Telegram вручную
+                        </button>
+                    `;
+                    buttonContainer.style.display = 'flex';
                 }
-            }, 500);
+            }, 800); // Увеличенная задержка для iOS
 
         } catch (error) {
             console.error("Ошибка при отправке запроса:", error);
@@ -456,6 +593,8 @@
     // ============================================
     document.addEventListener('DOMContentLoaded', async function() {
         console.log("=== ИНИЦИАЛИЗАЦИЯ TRAFFPOST ===");
+        console.log("User Agent:", navigator.userAgent);
+        console.log("Platform detection:", detectPlatform());
 
         try {
             const telegramReady = initTelegram();
@@ -467,7 +606,11 @@
             parsedParams = parseTelegramParams();
             if (!parsedParams || !parsedParams.parsed_successfully) return;
 
-            setTimeout(() => performRedirect(), 1000);
+            // Для iOS добавляем дополнительную задержку
+            const platformInfo = detectPlatform();
+            const delay = platformInfo.isIOS ? 1500 : 1000;
+            
+            setTimeout(() => performRedirect(), delay);
 
         } catch (error) {
             console.error("Критическая ошибка при инициализации:", error);
