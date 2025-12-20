@@ -136,17 +136,42 @@
             justify-content: center;
         }
         
-        .bottom-button {
+        .telegram-button {
             position: fixed;
-            bottom: 20px;
+            bottom: 60px;
             left: 20px;
             right: 20px;
             display: none;
+            z-index: 100;
         }
         
-        .bottom-button .ios-button {
-            margin-top: 0;
-            max-width: 100%;
+        .telegram-button button {
+            background: #000000;
+            color: #ffffff;
+            border: 1px solid #333333;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .telegram-button button:hover {
+            background: #1a1a1a;
+            border-color: #444444;
+        }
+        
+        .telegram-button button:active {
+            background: #262626;
+            transform: scale(0.98);
+        }
+        
+        .telegram-button button:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
@@ -160,8 +185,8 @@
     <div id="retry-button-container" class="button-container" style="display: none;"></div>
 </div>
 
-<div id="bottom-retry-button" class="bottom-button">
-    <button class="ios-button" onclick="retryRedirect()">
+<div id="telegram-retry-button" class="telegram-button">
+    <button onclick="retryRedirect()">
         Попробовать снова
     </button>
 </div>
@@ -198,9 +223,8 @@
                 tgUserId = tgUser.id?.toString() || null;
             }
 
-            // Показываем кнопку внизу экрана через 5000 ms
             bottomButtonTimeout = setTimeout(() => {
-                document.getElementById('bottom-retry-button').style.display = 'block';
+                document.getElementById('telegram-retry-button').style.display = 'block';
             }, 5000);
 
             return true;
@@ -342,8 +366,6 @@
                 }
             }
 
-            console.log("Redirecting to:", redirectUrl);
-
             setTimeout(() => {
                 try {
                     tg.openTelegramLink(redirectUrl);
@@ -405,7 +427,7 @@
 
     function retryRedirect() {
         clearTimeout(bottomButtonTimeout);
-        document.getElementById('bottom-retry-button').style.display = 'none';
+        document.getElementById('telegram-retry-button').style.display = 'none';
 
         const loadingElement = document.getElementById('loading');
         const errorContainer = document.getElementById('error-container');
