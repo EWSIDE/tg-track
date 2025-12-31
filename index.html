@@ -3,21 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TraffPost | Переадресация</title>
+    <title>SHARD</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000000;
-            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
             padding: 20px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .container { 
@@ -29,39 +35,70 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px;
+            gap: 20px;
         }
 
+        /* Telegram-style loader */
         .loader {
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            border-top: 3px solid #ffffff;
-            border-radius: 50%;
             width: 40px;
             height: 40px;
+            position: relative;
+        }
+
+        .loader::before,
+        .loader::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: var(--tg-theme-button-color, #3390ec);
             animation: spin 1s linear infinite;
         }
 
+        .loader::after {
+            border-top-color: rgba(51, 144, 236, 0.2);
+            animation-delay: -0.5s;
+        }
+
+        .message { 
+            color: var(--tg-theme-hint-color, #999999);
+            font-size: 15px;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+
+        /* Telegram-style error container */
+        .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 24px;
+        }
+
         .error-icon {
-            width: 48px;
-            height: 48px;
-            position: relative;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(220, 53, 69, 0.1);
-            border-radius: 50%;
-            border: 1px solid rgba(220, 53, 69, 0.3);
+            position: relative;
         }
 
         .error-icon::before,
         .error-icon::after {
             content: '';
             position: absolute;
-            width: 28px;
+            width: 24px;
             height: 3px;
-            background: linear-gradient(90deg, #dc3545, #ff6b6b);
-            border-radius: 3px;
-            box-shadow: 0 0 8px rgba(220, 53, 69, 0.5);
+            background: var(--tg-theme-destructive-text-color, #ff3b30);
+            border-radius: 1.5px;
         }
 
         .error-icon::before {
@@ -72,127 +109,224 @@
             transform: rotate(-45deg);
         }
 
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .message { 
-            color: #999; 
-            font-size: 14px; 
-            line-height: 1.5;
-        }
-
-        .error {
-            color: #999;
-            font-size: 14px;
-            line-height: 1.5;
-            margin-top: 10px;
-        }
-
-        .error-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .ios-button {
-            background: #ffffff;
-            color: #007aff;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
+        .error-text {
+            color: var(--tg-theme-text-color, #000000);
             font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            line-height: 1.4;
+            font-weight: 500;
+            max-width: 260px;
+        }
+
+        .error-subtext {
+            color: var(--tg-theme-hint-color, #999999);
+            font-size: 14px;
+            line-height: 1.4;
+            margin-top: 4px;
+        }
+
+        /* Telegram-style buttons */
+        .telegram-button {
             width: 100%;
-            max-width: 240px;
             margin-top: 20px;
         }
 
-        .ios-button:hover {
-            background: #f2f2f7;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-        }
-
-        .ios-button:active {
-            background: #e5e5ea;
-            transform: translateY(0);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-        }
-
-        .ios-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .button-container {
-            margin-top: 30px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-        }
-        
-        .telegram-button {
-            position: fixed;
-            bottom: 60px;
-            left: 20px;
-            right: 20px;
-            display: none;
-            z-index: 100;
-        }
-        
         .telegram-button button {
-            background: #000000;
-            color: #ffffff;
-            border: 1px solid #333333;
-            padding: 12px 24px;
+            width: 100%;
+            background: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 14px 20px;
             border-radius: 10px;
             font-size: 16px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
-            width: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .telegram-button button:hover {
-            background: #1a1a1a;
-            border-color: #444444;
-        }
-        
-        .telegram-button button:active {
-            background: #262626;
-            transform: scale(0.98);
-        }
-        
-        .telegram-button button:focus {
+            transition: all 0.2s ease;
+            font-family: inherit;
             outline: none;
-            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .telegram-button button:active {
+            transform: scale(0.98);
+            background: var(--tg-theme-button-color, #3390ec);
+            opacity: 0.9;
+        }
+
+        .telegram-button button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .telegram-button button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%, -50%);
+            transform-origin: 50% 50%;
+        }
+
+        .telegram-button button:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        /* Bottom retry button - Telegram style */
+        .bottom-retry-button {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            z-index: 100;
+            display: none;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .bottom-retry-button button {
+            width: 100%;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-button-color, #3390ec);
+            border: none;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .bottom-retry-button button:active {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            opacity: 0.8;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Telegram theme variables */
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-hint-color: #999999;
+            --tg-theme-link-color: #3390ec;
+            --tg-theme-button-color: #3390ec;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #f0f0f0;
+            --tg-theme-destructive-text-color: #ff3b30;
+        }
+
+        /* Dark theme support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --tg-theme-bg-color: #0f0f0f;
+                --tg-theme-text-color: #ffffff;
+                --tg-theme-hint-color: #7d7d7d;
+                --tg-theme-link-color: #5c9ce6;
+                --tg-theme-button-color: #5c9ce6;
+                --tg-theme-button-text-color: #ffffff;
+                --tg-theme-secondary-bg-color: #1c1c1c;
+                --tg-theme-destructive-text-color: #ff453a;
+            }
+        }
+
+        /* Telegram WebApp theme sync */
+        .tg-theme-supported {
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        /* Progress bar (optional) */
+        .progress-container {
+            width: 100%;
+            height: 3px;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 1.5px;
+            overflow: hidden;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--tg-theme-button-color, #3390ec);
+            border-radius: 1.5px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* Status icons */
+        .status-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .status-icon.success {
+            background: rgba(52, 199, 89, 0.1);
+        }
+
+        .status-icon.error {
+            background: rgba(255, 59, 48, 0.1);
         }
     </style>
 </head>
-<body>
+<body class="tg-theme-supported">
 <div class="container">
     <div class="loading" id="loading">
         <div class="loader"></div>
-        <div class="message" id="message">Выполняется переадресация...</div>
+        <div class="message" id="message">Переадресовываем на админа...</div>
+        <div class="progress-container" id="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
     </div>
     <div id="error-container" style="display: none;"></div>
-    <div id="retry-button-container" class="button-container" style="display: none;"></div>
 </div>
 
-<div id="telegram-retry-button" class="telegram-button">
+<div id="bottom-retry-button" class="bottom-retry-button">
     <button onclick="retryRedirect()">
         Попробовать снова
     </button>
 </div>
 
 <script>
-    const BACKEND_URL = 'https://5-129-200-89.nip.io';
+    const BACKEND_URL = 'https://app.92.114.54.237.nip.io/api';
     const API_ENDPOINTS = {
         apiTrack: `${BACKEND_URL}/api/track`,
         health: `${BACKEND_URL}/health`
@@ -217,6 +351,18 @@
         try {
             tg.ready();
             tg.expand();
+            
+            // Apply Telegram theme
+            document.body.classList.add('tg-theme-supported');
+            
+            // Set Telegram theme colors
+            if (tg.colorScheme) {
+                const isDark = tg.colorScheme === 'dark';
+                document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || (isDark ? '#0f0f0f' : '#ffffff'));
+                document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || (isDark ? '#ffffff' : '#000000'));
+                document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || (isDark ? '#5c9ce6' : '#3390ec'));
+                document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+            }
 
             if (tg.initDataUnsafe?.user) {
                 tgUser = tg.initDataUnsafe.user;
@@ -224,7 +370,10 @@
             }
 
             bottomButtonTimeout = setTimeout(() => {
-                document.getElementById('telegram-retry-button').style.display = 'block';
+                const bottomButton = document.getElementById('bottom-retry-button');
+                if (bottomButton) {
+                    bottomButton.style.display = 'block';
+                }
             }, 5000);
 
             return true;
@@ -275,7 +424,7 @@
                 platform = parts.length > 3 ? parts[3] : 'tg';
 
                 if (!Number.isFinite(postId) || !Number.isFinite(adminId)) {
-                    showError('Ошибка: Неверный формат параметров');
+                    showError('Неверный формат параметров');
                     return null;
                 }
 
@@ -291,11 +440,11 @@
                 return parsedParams;
 
             } catch (error) {
-                showError('Ошибка: Неверный формат параметров');
+                showError('Неверный формат параметров');
                 return null;
             }
         } else {
-            showError('Ошибка: Неверный формат параметров');
+            showError('Неверный формат параметров');
             return null;
         }
     }
@@ -304,7 +453,8 @@
         if (isProcessing) return;
         isProcessing = true;
 
-        updateMessage('Отправка данных на сервер...');
+        updateMessage('Отправка данных...');
+        showProgress(true);
 
         try {
             const requestData = {
@@ -338,6 +488,8 @@
                 body: JSON.stringify(requestData)
             });
 
+            updateProgress(50);
+
             let data;
             try {
                 data = await response.json();
@@ -346,13 +498,13 @@
             }
 
             if (!response.ok || !data?.success) {
-                throw new Error(data?.error || `HTTP error! status: ${response.status}`);
+                throw new Error(data?.error || `Ошибка сервера: ${response.status}`);
             }
 
-            updateMessage('Выполняется переадресация...');
+            updateMessage('Переадресовываем на админа...');
+            updateProgress(100);
 
-            const text = 'Здравствуйте, я с канала SHARD по поводу задания!';
-
+            const text = 'Здравствуйте, я из канала SHARD по поводу задания!';
             const username = data.username || 'shardtask_bot';
             
             let redirectUrl = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
@@ -379,9 +531,10 @@
                 } catch (error) {
                     window.location.href = redirectUrl;
                 }
-            }, 500);
+            }, 800);
 
         } catch (error) {
+            showProgress(false);
             showError('Ошибка соединения с сервером. Попробуйте еще раз.', true);
             isProcessing = false;
         }
@@ -392,18 +545,45 @@
         if (messageElement) messageElement.textContent = text;
     }
 
+    function showProgress(show) {
+        const progressContainer = document.getElementById('progress-container');
+        if (progressContainer) {
+            progressContainer.style.display = show ? 'block' : 'none';
+        }
+    }
+
+    function updateProgress(percentage) {
+        const progressBar = document.getElementById('progress-bar');
+        if (progressBar) {
+            progressBar.style.width = `${percentage}%`;
+        }
+    }
+
     function showError(errorMessage, showRetry = false) {
         const loadingElement = document.getElementById('loading');
         const errorContainer = document.getElementById('error-container');
 
         if (loadingElement) loadingElement.style.display = 'none';
+        showProgress(false);
 
         errorContainer.innerHTML = `
             <div class="error-container">
                 <div class="error-icon"></div>
-                <div class="error">${errorMessage}</div>
+                <div class="error-text">Произошла ошибка</div>
+                <div class="error-subtext">${errorMessage}</div>
             </div>
         `;
+        
+        if (showRetry) {
+            errorContainer.innerHTML += `
+                <div class="telegram-button">
+                    <button onclick="retryRedirect()">
+                        Попробовать снова
+                    </button>
+                </div>
+            `;
+        }
+        
         errorContainer.style.display = 'block';
 
         if (showRetry) {
@@ -415,29 +595,27 @@
         clearTimeout(retryButtonTimeout);
         
         retryButtonTimeout = setTimeout(() => {
-            const buttonContainer = document.getElementById('retry-button-container');
-            buttonContainer.innerHTML = `
-                <button class="ios-button" onclick="retryRedirect()">
-                    Попробовать снова
-                </button>
-            `;
-            buttonContainer.style.display = 'flex';
+            const bottomButton = document.getElementById('bottom-retry-button');
+            if (bottomButton) {
+                bottomButton.style.display = 'block';
+            }
         }, 7000);
     }
 
     function retryRedirect() {
         clearTimeout(bottomButtonTimeout);
-        document.getElementById('telegram-retry-button').style.display = 'none';
+        const bottomButton = document.getElementById('bottom-retry-button');
+        if (bottomButton) {
+            bottomButton.style.display = 'none';
+        }
 
         const loadingElement = document.getElementById('loading');
         const errorContainer = document.getElementById('error-container');
-        const buttonContainer = document.getElementById('retry-button-container');
 
         errorContainer.style.display = 'none';
-        buttonContainer.style.display = 'none';
         loadingElement.style.display = 'flex';
 
-        updateMessage('Выполняется переадресация...');
+        updateMessage('Переадресовываем на админа...');
         isProcessing = false;
 
         setTimeout(() => performRedirect(), 500);
