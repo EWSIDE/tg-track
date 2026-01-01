@@ -50,10 +50,29 @@
             opacity: 0;
         }
 
+        
         .emoji-container {
             width: 120px;
             height: 120px;
             margin-bottom: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Telegram-like loader (subtle ring) */
+        .tg-loader {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 3px solid rgba(142, 142, 147, 0.25);
+            border-top-color: var(--tg-theme-button-color);
+            animation: spin .8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         .emoji-container img {
@@ -61,6 +80,16 @@
             height: 100%;
             object-fit: contain;
             animation: appear .25s ease-out;
+            opacity: 0;
+            transition: opacity .15s ease;
+        }
+
+        .emoji-container.loaded img {
+            opacity: 1;
+        }
+
+        .emoji-container.loaded .tg-loader {
+            display: none;
         }
 
         @keyframes appear {
@@ -107,7 +136,8 @@
 <body>
 
 <div class="content" id="main-view">
-    <div class="emoji-container">
+    <div class="emoji-container" id="emoji-box">
+        <div class="tg-loader" aria-label="loading"></div>
         <img id="status-emoji"
              src="https://github.com/goforbg/telegram-emoji-gifs/blob/master/hour-glass.gif?raw=true"
              alt="loading">
@@ -215,6 +245,8 @@
     }
 
     function showError(title, text) {
+        document.getElementById('emoji-box')?.classList.add('loaded');
+
         document.getElementById('status-emoji').src =
             'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true';
 
@@ -230,8 +262,9 @@
         const emoji = document.getElementById('status-emoji');
         await waitForImage(emoji);
 
-        // небольшая пауза, чтобы экран воспринимался спокойно
-        setTimeout(performRedirect, 1200);
+        // как только гифка готова — показываем её и сразу продолжаем
+        document.getElementById('emoji-box')?.classList.add('loaded');
+        performRedirect();
     });
 </script>
 
