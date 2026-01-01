@@ -26,7 +26,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-                         Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji";
+                         Roboto, Helvetica, Arial, sans-serif;
             background: var(--tg-theme-bg-color);
             color: var(--tg-theme-text-color);
             height: 100vh;
@@ -43,13 +43,11 @@
             justify-content: center;
             padding: 24px;
             text-align: center;
-            transition: opacity .45s cubic-bezier(.25,.8,.25,1),
-                        transform .45s cubic-bezier(.25,.8,.25,1);
+            transition: opacity .6s ease;
         }
 
         .content.fade-out {
             opacity: 0;
-            transform: scale(0.98);
         }
 
         .emoji-container {
@@ -62,17 +60,15 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            animation: tgAppear .25s ease-out;
+            animation: appear .25s ease-out;
         }
 
-        @keyframes tgAppear {
+        @keyframes appear {
             from {
                 opacity: 0;
-                transform: scale(.96);
             }
             to {
                 opacity: 1;
-                transform: scale(1);
             }
         }
 
@@ -117,10 +113,8 @@
              alt="loading">
     </div>
 
-    <div class="title" id="status-title">Подготовка</div>
-    <div class="subtitle" id="status-desc">
-        Подключаемся к Telegram
-    </div>
+    <div class="title">Открываем Telegram</div>
+    <div class="subtitle">Это займёт пару секунд</div>
 </div>
 
 <div class="footer" id="footer">
@@ -144,21 +138,33 @@
             tg.themeParams.text_color || '#000000';
     }
 
+    function waitForImage(img) {
+        return new Promise(resolve => {
+            if (img.complete) return resolve();
+            img.onload = resolve;
+            img.onerror = resolve;
+        });
+    }
+
     function parseParams() {
         const startParam =
             tg.initDataUnsafe?.start_param ||
             new URLSearchParams(window.location.search).get('startapp');
 
         if (!startParam) {
-            showError('Задание не найдено',
-                      'Пожалуйста, вернитесь в канал и попробуйте снова.');
+            showError(
+                'Задание не найдено',
+                'Вернитесь в канал и попробуйте снова'
+            );
             return null;
         }
 
         const parts = startParam.split('_');
         if (parts.length < 2) {
-            showError('Ошибка данных',
-                      'Неверный формат запуска');
+            showError(
+                'Ошибка данных',
+                'Неверный формат запуска'
+            );
             return null;
         }
 
@@ -188,30 +194,23 @@
             const data = await response.json();
             if (!data.success) throw new Error();
 
-            document.getElementById('status-title').innerText =
-                'Открываем диалог';
-            document.getElementById('status-desc').innerText =
-                'Почти готово';
-
             const redirectUrl =
                 data.redirect_url ||
                 `https://t.me/${data.username || 'shardtask_bot'}`;
 
             const view = document.getElementById('main-view');
+            view.classList.add('fade-out');
 
             setTimeout(() => {
-                view.classList.add('fade-out');
-
-                setTimeout(() => {
-                    tg.openTelegramLink(redirectUrl);
-                    setTimeout(() => tg.close(), 800);
-                }, 450);
-
-            }, 300);
+                tg.openTelegramLink(redirectUrl);
+                setTimeout(() => tg.close(), 600);
+            }, 600);
 
         } catch {
-            showError('Ошибка связи',
-                      'Не удалось подключиться к серверу');
+            showError(
+                'Ошибка связи',
+                'Не удалось подключиться к серверу'
+            );
         }
     }
 
@@ -219,16 +218,20 @@
         document.getElementById('status-emoji').src =
             'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true';
 
-        document.getElementById('status-title').innerText = title;
-        document.getElementById('status-desc').innerText = text;
+        document.querySelector('.title').innerText = title;
+        document.querySelector('.subtitle').innerText = text;
         document.getElementById('footer').style.display = 'block';
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         init();
-        if (parseParams()) {
-            setTimeout(performRedirect, 500);
-        }
+        if (!parseParams()) return;
+
+        const emoji = document.getElementById('status-emoji');
+        await waitForImage(emoji);
+
+        // небольшая пауза, чтобы экран воспринимался спокойно
+        setTimeout(performRedirect, 1200);
     });
 </script>
 
