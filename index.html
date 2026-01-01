@@ -161,13 +161,13 @@
 </div>
 
 <script>
-    const BACKEND_URL = 'https://app.92.114.54.237.nip.io/api';
+    const BACKEND_URL = 'https://app.92.114.54.237.nip.io';
     const tg = window.Telegram.WebApp;
     let parsedParams = {};
 
-    // Основные GIF-ки
+    // Локальные GIF-ки
     const GIFS = {
-        LOADING: 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/hour-glass.gif?raw=true',
+        LOADING: 'assets/load.gif', // Изменили на локальный путь
         ERROR: 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true'
     };
 
@@ -191,8 +191,15 @@
                 resolve();
             };
             img.onerror = () => {
-                container.classList.add('loaded');
-                resolve();
+                // Если локальный GIF не загрузился, используем fallback
+                console.warn('Не удалось загрузить локальный GIF:', url);
+                if (url.includes('assets/')) {
+                    // Fallback на онлайн GIF при ошибке
+                    img.src = 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/hour-glass.gif?raw=true';
+                } else {
+                    container.classList.add('loaded');
+                    resolve();
+                }
             };
             
             img.src = url;
@@ -279,7 +286,7 @@
     document.addEventListener('DOMContentLoaded', async () => {
         init();
         
-        // 1. Сначала загружаем основную GIF (часы)
+        // 1. Сначала загружаем локальный GIF загрузки
         await updateStatusImage(GIFS.LOADING);
         
         // 2. Только после этого проверяем параметры и делаем редирект
@@ -291,4 +298,3 @@
 
 </body>
 </html>
-
