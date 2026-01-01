@@ -100,7 +100,6 @@
             transition: all 0.5s var(--smooth);
         }
 
-        /* Класс, который вешается при успешной загрузке картинки */
         .emoji-container.loaded .status-gif {
             opacity: 1;
             transform: scale(1);
@@ -170,8 +169,8 @@
     const tg = window.Telegram.WebApp;
     const BACKEND_URL = 'https://app.92.114.54.237.nip.io';
     
-    const LOADING_GIF_URL = 'https://raw.githubusercontent.com/goforbg/telegram-emoji-gifs/master/mail-box.gif';
-    const ERROR_GIF_URL = 'https://raw.githubusercontent.com/goforbg/telegram-emoji-gifs/master/spider-crawl-folder.gif';
+    const LOADING_GIF_URL = 'assets/mail-box.gif';
+    const ERROR_GIF_URL = 'assets/spider-crawl-folder.gif';
 
     let isProcessing = false;
 
@@ -179,7 +178,6 @@
         tg.ready();
         tg.expand();
         
-        // Установка цвета фона из темы Telegram
         document.body.style.background = tg.themeParams.bg_color || '#ffffff';
         
         const user = tg.initDataUnsafe?.user;
@@ -199,7 +197,6 @@
         const container = document.getElementById('emoji-box');
         const img = document.getElementById('status-emoji');
         
-        // Сбрасываем состояние перед новой загрузкой
         container.classList.remove('loaded');
         
         if (!url) return;
@@ -207,14 +204,12 @@
         const preloader = new Image();
         preloader.onload = () => {
             img.src = url;
-            // Небольшой таймаут, чтобы браузер успел отрисовать кадр
             setTimeout(() => {
                 container.classList.add('loaded');
             }, 50);
         };
         preloader.onerror = () => {
-            console.error("Failed to load image");
-            container.classList.add('loaded'); // Убираем спиннер даже при ошибке
+            container.classList.add('loaded');
         };
         preloader.src = url;
     }
@@ -229,8 +224,12 @@
             block.classList.remove('fade-out');
             
             const footer = document.getElementById('footer');
-            if (isError) footer.classList.add('visible');
-            else footer.classList.remove('visible');
+            if (isError) {
+                footer.classList.add('visible');
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+            } else {
+                footer.classList.remove('visible');
+            }
         }, 300);
     }
 
@@ -242,21 +241,22 @@
         const startParam = tg.initDataUnsafe?.tgWebAppStartParam || tg.initDataUnsafe?.start_param;
         
         if (!startParam) {
-            showError('Задание не найдено', 'Вернитесь в канал и попробуйте снова.');
+            showError('Задание не найдено', 'Пожалуйста, используйте корректную ссылку из канала.');
             return;
         }
 
         isProcessing = true;
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 сек таймаут
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
 
             const res = await fetch(`${BACKEND_URL}/api/track`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     startapp: startParam,
-                    tg_user_id: tg.initDataUnsafe?.user?.id
+                    tg_user_id: tg.initDataUnsafe?.user?.id,
+                    initData: tg.initData
                 }),
                 signal: controller.signal
             });
@@ -265,7 +265,8 @@
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error();
 
-            updateUI('Переходим в чат', 'Пожалуйста, подождите, это займёт время.');
+            updateUI('Переходим в чат', 'Пожалуйста, подождите...');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
             const defaultText = 'Здравствуйте, я из канала SHARD по поводу задания!';
             let link = `https://t.me/${data.username || 'shardtask_bot'}?text=${encodeURIComponent(defaultText)}`;
@@ -280,10 +281,10 @@
             setTimeout(() => {
                 document.getElementById('main-view').style.opacity = '0';
                 setTimeout(() => tg.openTelegramLink(link), 500);
-            }, 1500);
+            }, 1200);
 
         } catch (e) {
-            showError('Ошибка соединения', 'Сервер временно недоступен или ссылка недействительна.', true);
+            showError('Ошибка соединения', 'Не удалось связаться с сервером. Попробуйте позже.', true);
             isProcessing = false;
         }
     }
@@ -297,7 +298,6 @@
         window.location.reload();
     }
 
-    // Инициализация
     window.onload = () => {
         init();
         setTimeout(start, 400);
