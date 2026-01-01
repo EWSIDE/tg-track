@@ -167,7 +167,7 @@
 
     // Локальные GIF-ки
     const GIFS = {
-        LOADING: 'assets/load.gif', // Изменили на локальный путь
+        LOADING: 'https://github.com/EWSIDE/tg-track/blob/main/assets/Load.gif?raw=true', // Изменили на локальный путь
         ERROR: 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true'
     };
 
@@ -195,7 +195,7 @@
                 console.warn('Не удалось загрузить локальный GIF:', url);
                 if (url.includes('assets/')) {
                     // Fallback на онлайн GIF при ошибке
-                    img.src = 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/hour-glass.gif?raw=true';
+                    img.src = 'https://github.com/EWSIDE/tg-track/blob/main/assets/Load.gif?raw=true';
                 } else {
                     container.classList.add('loaded');
                     resolve();
@@ -298,4 +298,3 @@
 
 </body>
 </html>
-
