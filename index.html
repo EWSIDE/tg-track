@@ -185,15 +185,32 @@
 </div>
 
 <div class="footer" id="footer">
-    <button class="tg-main-button" onclick="location.reload()">
+    <button class="tg-main-button" onclick="retryRedirect()">
         Попробовать снова
     </button>
 </div>
 
 <script>
     const BACKEND_URL = 'https://app.92.114.54.237.nip.io/api';
+    const API_ENDPOINTS = {
+        apiTrack: `${BACKEND_URL}/api/track`,
+        health: `${BACKEND_URL}/health`
+    };
+
     const tg = window.Telegram.WebApp;
+
+    let postId = null;
+    let adminId = null;
+    let ref = null;
+    let platform = 'tg';
+
+    let tgUserId = null;
+    let tgUser = null;
+
     let parsedParams = {};
+    let isProcessing = false;
+    let retryButtonTimeout = null;
+    let bottomButtonTimeout = null;
 
     // Оставляем только GIF для ошибок
     const GIFS = {
@@ -201,14 +218,25 @@
     };
 
     function init() {
-        tg.ready();
-        tg.expand();
-        document.body.style.background = tg.themeParams.bg_color || '#ffffff';
-        document.body.style.color = tg.themeParams.text_color || '#000000';
-        
-        // Показываем текст сразу
-        document.getElementById('main-title').style.opacity = '1';
-        document.getElementById('main-subtitle').style.opacity = '1';
+        try {
+            tg.ready();
+            tg.expand();
+            document.body.style.background = tg.themeParams.bg_color || '#ffffff';
+            document.body.style.color = tg.themeParams.text_color || '#000000';
+            
+            // Показываем текст сразу
+            document.getElementById('main-title').style.opacity = '1';
+            document.getElementById('main-subtitle').style.opacity = '1';
+
+            if (tg.initDataUnsafe?.user) {
+                tgUser = tg.initDataUnsafe.user;
+                tgUserId = tgUser.id?.toString() || null;
+            }
+
+            return true;
+        } catch (error) {
+            return false;
+        }
     }
 
     /**
@@ -248,61 +276,168 @@
     }
 
     function parseParams() {
-        const startParam = tg.initDataUnsafe?.start_param || 
-                          new URLSearchParams(window.location.search).get('startapp');
+        let startParam = null;
+
+        if (tg.initDataUnsafe?.tgWebAppStartParam) {
+            startParam = tg.initDataUnsafe.tgWebAppStartParam;
+        } else if (tg.initDataUnsafe?.start_param) {
+            startParam = tg.initDataUnsafe.start_param;
+        }
+
+        if (!startParam) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const testParam = urlParams.get('test');
+            const startapp = urlParams.get('startapp');
+
+            if (testParam) {
+                startParam = testParam;
+            } else if (startapp) {
+                startParam = startapp;
+            }
+        }
 
         if (!startParam) {
             showError('Задание не найдено', 'Пожалуйста, вернитесь в канал и попробуйте снова.');
-            return false;
+            return null;
         }
 
-        const parts = startParam.split('_');
-        if (parts.length < 2) {
-            showError('Ошибка данных', 'Некорректная ссылка. Попробуйте снова из бота.');
-            return false;
+        let cleanParam = startParam;
+        if (cleanParam.startsWith('?')) cleanParam = cleanParam.substring(1);
+        if (cleanParam.includes('tgWebAppStartParam=')) {
+            cleanParam = cleanParam.split('tgWebAppStartParam=')[1];
         }
 
-        parsedParams = { post_id: +parts[0], admin_id: +parts[1], raw: startParam };
-        return true;
+        const parts = cleanParam.split('_');
+
+        if (parts.length >= 2) {
+            try {
+                postId = parseInt(parts[0], 10);
+                adminId = parseInt(parts[1], 10);
+                ref = parts.length > 2 ? parts[2] : null;
+                platform = parts.length > 3 ? parts[3] : 'tg';
+
+                if (!Number.isFinite(postId) || !Number.isFinite(adminId)) {
+                    showError('Ошибка', 'Неверный формат параметров. Попробуйте снова из бота.');
+                    return null;
+                }
+
+                parsedParams = {
+                    post_id: postId,
+                    admin_id: adminId,
+                    ref: ref,
+                    platform: platform,
+                    raw_param: cleanParam,
+                    parsed_successfully: true
+                };
+
+                return parsedParams;
+
+            } catch (error) {
+                showError('Ошибка', 'Неверный формат параметров. Попробуйте снова из бота.');
+                return null;
+            }
+        } else {
+            showError('Ошибка', 'Неверный формат параметров. Попробуйте снова из бота.');
+            return null;
+        }
     }
 
     async function performRedirect() {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        updateMessage('Отправка данных на сервер...');
+
         try {
-            const [response] = await Promise.all([
-                fetch(`${BACKEND_URL}/api/track`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        startapp: parsedParams.raw,
-                        post_id: parsedParams.post_id,
-                        admin_id: parsedParams.admin_id,
-                        tg_user_id: tg.initDataUnsafe?.user?.id,
-                        user_data: tg.initDataUnsafe?.user || {}
-                    })
-                }),
-                new Promise(r => setTimeout(r, 1500)) 
-            ]);
+            const requestData = {
+                startapp: parsedParams.raw_param,
+                post_id: parsedParams.post_id,
+                admin_id: parsedParams.admin_id,
+                tg_user_id: tgUserId,
+                ref: parsedParams.ref || 'direct',
+                platform: parsedParams.platform,
+                source: 'mini_app',
+                timestamp: new Date().toISOString()
+            };
 
-            const data = await response.json();
-            if (!data.success) throw new Error('API Error');
+            if (tgUser) {
+                requestData.user_data = {
+                    id: tgUser.id,
+                    username: tgUser.username,
+                    first_name: tgUser.first_name,
+                    last_name: tgUser.last_name,
+                    language_code: tgUser.language_code,
+                    is_premium: tgUser.is_premium || false
+                };
+            }
 
-            const redirectUrl = data.redirect_url || `https://t.me/${data.username || 'shardtask_bot'}`;
+            const response = await fetch(API_ENDPOINTS.apiTrack, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                throw new Error('Ошибка формата ответа от сервера');
+            }
+
+            if (!response.ok || !data?.success) {
+                throw new Error(data?.error || `HTTP error! status: ${response.status}`);
+            }
+
+            updateMessage('Переадресовываем на админа..');
+
+            const text = 'Здравствуйте, я из канала SHARD по поводу задания!';
+
+            const username = data.username || 'shardtask_bot';
+            
+            let redirectUrl = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
+            
+            if (data.redirect_url && data.redirect_url.startsWith('https://t.me/')) {
+                redirectUrl = data.redirect_url;
+                if (!redirectUrl.includes('?text=')) {
+                    const hasQuery = redirectUrl.includes('?');
+                    const sep = hasQuery ? '&' : '?';
+                    redirectUrl = `${redirectUrl}${sep}text=${encodeURIComponent(text)}`;
+                }
+            }
 
             // Плавно скрываем контент перед переходом
             document.getElementById('main-view').classList.add('fade-out');
 
             setTimeout(() => {
-                tg.openTelegramLink(redirectUrl);
-                setTimeout(() => tg.close(), 1000);
+                try {
+                    tg.openTelegramLink(redirectUrl);
+                    
+                    setTimeout(() => {
+                        if (document.visibilityState !== 'hidden') {
+                            window.open(redirectUrl, '_blank');
+                        }
+                    }, 2000);
+                    
+                } catch (error) {
+                    window.location.href = redirectUrl;
+                }
             }, 600);
 
-        } catch (e) {
-            console.error('Redirect error:', e);
-            showError('Ошибка сервера', 'Не удалось связаться с сервером. Проверьте соединение.');
+        } catch (error) {
+            showError('Ошибка соединения с сервером', 'Не удалось связаться с сервером. Проверьте соединение.', true);
+            isProcessing = false;
         }
     }
 
-    async function showError(title, text) {
+    function updateMessage(text) {
+        const titleElement = document.getElementById('main-title');
+        if (titleElement) titleElement.textContent = text;
+    }
+
+    async function showError(title, text, showRetry = false) {
         const titleEl = document.getElementById('main-title');
         const subtitleEl = document.getElementById('main-subtitle');
         const textContent = document.querySelector('.text-content');
@@ -328,18 +463,44 @@
         }, 300);
     }
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        init();
+    function retryRedirect() {
+        clearTimeout(bottomButtonTimeout);
+
+        const footer = document.getElementById('footer');
+        footer.classList.remove('visible');
+
+        updateMessage('Открываем чат');
+        document.getElementById('main-subtitle').innerText = 'Это займёт пару секунд';
         
-        // Инициализируем с лоадером (без GIF)
-        await updateStatusImage(null);
+        // Сбрасываем GIF к лоадеру
+        updateStatusImage(null);
         
-        if (parseParams()) {
-            performRedirect();
+        isProcessing = false;
+
+        setTimeout(() => performRedirect(), 500);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            const telegramReady = init();
+            if (!telegramReady) {
+                showError('Ошибка инициализации Telegram', 'Не удалось инициализировать приложение Telegram');
+                return;
+            }
+
+            // Инициализируем с лоадером (без GIF)
+            await updateStatusImage(null);
+            
+            parsedParams = parseParams();
+            if (!parsedParams || !parsedParams.parsed_successfully) return;
+
+            setTimeout(() => performRedirect(), 1000);
+
+        } catch (error) {
+            showError('Критическая ошибка при загрузке', 'Произошла непредвиденная ошибка', true);
         }
     });
 </script>
 
 </body>
 </html>
-
