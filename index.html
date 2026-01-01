@@ -1,214 +1,155 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CryptoBot Style Redirect</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SHARD</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-secondary-bg-color: #f0f0f0;
+            --tg-theme-text-color: #000000;
+            --tg-theme-hint-color: #999999;
+            --tg-theme-button-color: #3390ec;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-destructive-text-color: #ff3b30;
+        }
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent;
+        }
 
-<style>
-:root {
-    --accent: #2ea6ff;
-    --text-main: #ffffff;
-    --text-secondary: #9aa4b2;
-    --text-muted: #6f7a88;
-}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-}
+        .container {
+            width: 100%;
+            max-width: 300px;
+            padding: 20px;
+            text-align: center;
+        }
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
-                 "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    min-height: 100vh;
-    background: linear-gradient(180deg, #0f1724 0%, #0b1220 100%);
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+        /* Анимированный лоадер */
+        .loader-wrapper {
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: center;
+        }
 
-/* Контейнер */
-.container {
-    width: 100%;
-    max-width: 340px;
-    padding: 24px 20px;
-    text-align: center;
-}
+        .loader {
+            width: 44px;
+            height: 44px;
+            border: 3px solid var(--tg-theme-secondary-bg-color);
+            border-top: 3px solid var(--tg-theme-button-color);
+            border-radius: 50%;
+            animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
 
-/* Иконка */
-.gift-icon {
-    width: 72px;
-    height: 72px;
-    border-radius: 20px;
-    background: linear-gradient(180deg, #2ea6ff, #1d7fd6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 18px;
-    box-shadow: 0 10px 30px rgba(46, 166, 255, 0.35);
-}
+        /* Текстовые стили */
+        .message {
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.4;
+            color: var(--tg-theme-text-color);
+        }
 
-.gift-icon svg {
-    width: 36px;
-    height: 36px;
-    fill: #ffffff;
-}
+        /* Прогресс-бар */
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 2px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
 
-/* Тексты */
-.title {
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 6px;
-}
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--tg-theme-button-color);
+            transition: width 0.3s ease;
+        }
 
-.subtitle {
-    font-size: 14px;
-    line-height: 1.45;
-    color: var(--text-secondary);
-    margin-bottom: 18px;
-}
+        /* Ошибки */
+        .error-view {
+            display: none;
+        }
 
-.message {
-    font-size: 15px;
-    line-height: 1.45;
-    margin-bottom: 10px;
-}
+        .status-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 59, 48, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: var(--tg-theme-destructive-text-color);
+            font-size: 24px;
+            font-weight: bold;
+        }
 
-.muted {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-top: 6px;
-}
+        /* Кнопки */
+        .btn-container {
+            position: fixed;
+            bottom: 24px;
+            left: 20px;
+            right: 20px;
+            display: none;
+        }
 
-/* Лоадер */
-.loader-wrapper {
-    margin: 22px 0;
-    display: flex;
-    justify-content: center;
-}
+        .tg-button {
+            width: 100%;
+            padding: 14px;
+            background: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
 
-.loader {
-    width: 36px;
-    height: 36px;
-    border: 3px solid rgba(255,255,255,0.15);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.9s linear infinite;
-}
+        .tg-button:active {
+            opacity: 0.9;
+            transform: scale(0.98);
+        }
 
-/* Прогресс */
-.progress-container {
-    width: 100%;
-    height: 4px;
-    background: rgba(255,255,255,0.12);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-top: 18px;
-}
-
-.progress-bar {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #2ea6ff, #6bd0ff);
-    transition: width 0.35s ease;
-}
-
-/* Ошибка */
-.error-view {
-    display: none;
-}
-
-.status-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: rgba(255, 59, 48, 0.15);
-    color: #ff3b30;
-    font-size: 26px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 14px;
-}
-
-/* Кнопка */
-.btn-container {
-    position: fixed;
-    bottom: 24px;
-    left: 20px;
-    right: 20px;
-    display: none;
-}
-
-.tg-button {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(180deg, #2ea6ff, #1d7fd6);
-    color: #ffffff;
-    border: none;
-    border-radius: 14px;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.tg-button:active {
-    transform: scale(0.98);
-    opacity: 0.9;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-</style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
-
 <body>
 
 <div class="container">
-
-    <!-- Загрузка -->
     <div id="loading-view">
-
-        <div class="gift-icon">
-            <svg viewBox="0 0 24 24">
-                <path d="M20 7h-2.18A3 3 0 0 0 12 4a3 3 0 0 0-5.82 3H4v3h16V7zm-8-3a1 1 0 1 1-1 1 1 1 0 0 1 1-1zm-4 1a1 1 0 1 1 1 1 1 1 0 0 1-1-1zm12 5H4v10a2 2 0 0 0 2 2h5V10h2v12h5a2 2 0 0 0 2-2z"/>
-            </svg>
-        </div>
-
-        <div class="title">Розыгрыш</div>
-        <div class="subtitle">
-            Подготавливаем участие и перенаправляем вас
-        </div>
-
         <div class="loader-wrapper">
             <div class="loader"></div>
         </div>
-
-        <div class="message" id="status-text">
-            Переадресовываем на админа…
-        </div>
-
+        <div class="message" id="status-text">Переадресовываем на админа...</div>
         <div class="progress-container">
             <div class="progress-bar" id="pb"></div>
         </div>
-
-        <div class="muted">CryptoBot secure redirect</div>
     </div>
 
-    <!-- Ошибка -->
     <div id="error-view" class="error-view">
         <div class="status-icon">!</div>
         <div class="message">Произошла ошибка</div>
-        <div class="muted" id="error-msg"></div>
+        <div style="color: var(--tg-theme-hint-color); font-size: 14px; margin-top: 8px;" id="error-msg"></div>
     </div>
-
 </div>
 
 <div class="btn-container" id="footer">
@@ -216,118 +157,119 @@ body {
 </div>
 
 <script>
-const BACKEND_URL = 'https://app.92.114.54.237.nip.io/api';
-const tg = window.Telegram.WebApp;
-let isProcessing = false;
-let parsedParams = {};
+    const BACKEND_URL = 'https://app.92.114.54.237.nip.io/api';
+    const tg = window.Telegram.WebApp;
+    let isProcessing = false;
+    let parsedParams = {};
 
-function init() {
-    tg.ready();
-    tg.expand();
-}
-
-function parseParams() {
-    let startParam = tg.initDataUnsafe?.start_param ||
-                     new URLSearchParams(window.location.search).get('startapp');
-
-    if (!startParam) {
-        showError('Задание не найдено');
-        return null;
+    function init() {
+        tg.ready();
+        tg.expand();
+        // Синхронизация цветов темы
+        if (tg.themeParams.bg_color) document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color);
+        if (tg.themeParams.button_color) document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color);
     }
 
-    const parts = startParam.split('_');
-    if (parts.length >= 2) {
-        parsedParams = {
-            post_id: parseInt(parts[0], 10),
-            admin_id: parseInt(parts[1], 10),
-            ref: parts[2] || 'direct',
-            platform: parts[3] || 'tg',
-            raw: startParam
-        };
-        return parsedParams;
-    } else {
-        showError('Неверный формат параметров');
-        return null;
-    }
-}
-
-async function performRedirect() {
-    if (isProcessing) return;
-    isProcessing = true;
-    updateProgress(40);
-
-    try {
-        const requestData = {
-            startapp: parsedParams.raw,
-            post_id: parsedParams.post_id,
-            admin_id: parsedParams.admin_id,
-            tg_user_id: tg.initDataUnsafe?.user?.id,
-            ref: parsedParams.ref,
-            platform: parsedParams.platform,
-            source: 'mini_app',
-            user_data: tg.initDataUnsafe?.user || {}
-        };
-
-        const response = await fetch(`${BACKEND_URL}/api/track`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestData)
-        });
-
-        const data = await response.json();
-        if (!response.ok || !data.success)
-            throw new Error(data.error || 'Ошибка сервера');
-
-        updateProgress(100);
-
-        const text = 'Здравствуйте, я из канала SHARD по поводу задания!';
-        const username = data.username || 'shardtask_bot';
-        let redirectUrl = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
-
-        if (data.redirect_url && data.redirect_url.startsWith('https://t.me/')) {
-            redirectUrl = data.redirect_url;
-            if (!redirectUrl.includes('?text=')) {
-                const sep = redirectUrl.includes('?') ? '&' : '?';
-                redirectUrl += `${sep}text=${encodeURIComponent(text)}`;
-            }
+    function parseParams() {
+        let startParam = tg.initDataUnsafe?.start_param || new URLSearchParams(window.location.search).get('startapp');
+        
+        if (!startParam) {
+            showError('Задание не найдено');
+            return null;
         }
 
-        setTimeout(() => {
-            try {
-                tg.openTelegramLink(redirectUrl);
-                setTimeout(() => {
-                    if (document.visibilityState !== 'hidden') {
-                        window.open(redirectUrl, '_blank');
-                    }
-                }, 2000);
-            } catch {
-                window.location.href = redirectUrl;
+        const parts = startParam.split('_');
+        if (parts.length >= 2) {
+            parsedParams = {
+                post_id: parseInt(parts[0], 10),
+                admin_id: parseInt(parts[1], 10),
+                ref: parts[2] || 'direct',
+                platform: parts[3] || 'tg',
+                raw: startParam
+            };
+            return parsedParams;
+        } else {
+            showError('Неверный формат параметров');
+            return null;
+        }
+    }
+
+    async function performRedirect() {
+        if (isProcessing) return;
+        isProcessing = true;
+        updateProgress(40);
+
+        try {
+            const requestData = {
+                startapp: parsedParams.raw,
+                post_id: parsedParams.post_id,
+                admin_id: parsedParams.admin_id,
+                tg_user_id: tg.initDataUnsafe?.user?.id,
+                ref: parsedParams.ref,
+                platform: parsedParams.platform,
+                source: 'mini_app',
+                user_data: tg.initDataUnsafe?.user || {}
+            };
+
+            const response = await fetch(`${BACKEND_URL}/api/track`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestData)
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) throw new Error(data.error || 'Ошибка сервера');
+
+            updateProgress(100);
+
+            // ТВОЯ ОРИГИНАЛЬНАЯ ПЕРЕАДРЕСАЦИЯ
+            const text = 'Здравствуйте, я из канала SHARD по поводу задания!';
+            const username = data.username || 'shardtask_bot';
+            let redirectUrl = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
+            
+            if (data.redirect_url && data.redirect_url.startsWith('https://t.me/')) {
+                redirectUrl = data.redirect_url;
+                if (!redirectUrl.includes('?text=')) {
+                    const sep = redirectUrl.includes('?') ? '&' : '?';
+                    redirectUrl = `${redirectUrl}${sep}text=${encodeURIComponent(text)}`;
+                }
             }
-        }, 800);
 
-    } catch {
-        showError('Ошибка соединения с сервером');
+            setTimeout(() => {
+                try {
+                    tg.openTelegramLink(redirectUrl);
+                    setTimeout(() => {
+                        if (document.visibilityState !== 'hidden') {
+                            window.open(redirectUrl, '_blank');
+                        }
+                    }, 2000);
+                } catch (error) {
+                    window.location.href = redirectUrl;
+                }
+            }, 800);
+
+        } catch (error) {
+            showError('Ошибка соединения с сервером');
+        }
     }
-}
 
-function updateProgress(v) {
-    document.getElementById('pb').style.width = v + '%';
-}
-
-function showError(msg) {
-    document.getElementById('loading-view').style.display = 'none';
-    document.getElementById('error-view').style.display = 'block';
-    document.getElementById('footer').style.display = 'block';
-    document.getElementById('error-msg').textContent = msg;
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    init();
-    if (parseParams()) {
-        setTimeout(performRedirect, 1000);
+    function updateProgress(v) {
+        document.getElementById('pb').style.width = v + '%';
     }
-});
+
+    function showError(m) {
+        document.getElementById('loading-view').style.display = 'none';
+        document.getElementById('error-view').style.display = 'block';
+        document.getElementById('footer').style.display = 'block';
+        document.getElementById('error-msg').textContent = m;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        init();
+        if (parseParams()) {
+            setTimeout(performRedirect, 1000);
+        }
+    });
 </script>
-
 </body>
 </html>
