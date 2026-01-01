@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>App</title>
+    <title>SHARD</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -24,13 +24,14 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji';
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--tg-theme-bg-color);
             color: var(--tg-theme-text-color);
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: background-color 0.3s ease;
         }
 
         .content {
@@ -41,122 +42,93 @@
             justify-content: center;
             padding: 20px;
             text-align: center;
+            /* Плавное появление всего контента */
+            animation: fadeIn 0.4s ease-out;
         }
 
-        /* Telegram Emoji Styling */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Контейнер для эмодзи с мягкой сменой изображения */
         .emoji-container {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 20px;
+            width: 140px;
+            height: 140px;
+            margin-bottom: 24px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .emoji-container img {
             width: 100%;
             height: 100%;
             object-fit: contain;
+            transition: all 0.3s ease;
         }
 
-        /* Typography following Telegram UI */
+        /* Состояния текста */
         .title {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            transition: opacity 0.2s ease;
         }
 
         .subtitle {
-            font-size: 15px;
+            font-size: 16px;
             color: var(--tg-theme-hint-color);
-            line-height: 1.4;
-            max-width: 260px;
+            line-height: 1.5;
+            max-width: 280px;
+            transition: opacity 0.2s ease;
         }
 
-        /* Modern Telegram Loader */
-        .loader-container {
-            margin-top: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* Скрываем старый лоадер, заменяем его на пустое пространство */
+        .loader-placeholder {
+            height: 40px;
+            margin-top: 20px;
         }
 
-        .telegram-loader {
-            width: 48px;
-            height: 48px;
-            position: relative;
-        }
-
-        .telegram-loader::before,
-        .telegram-loader::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            animation: telegramLoader 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-        }
-
-        .telegram-loader::before {
-            width: 100%;
-            height: 100%;
-            border: 3px solid transparent;
-            border-top-color: var(--tg-theme-button-color);
-        }
-
-        .telegram-loader::after {
-            width: 80%;
-            height: 80%;
-            border: 3px solid transparent;
-            border-top-color: var(--tg-theme-button-color);
-            animation-delay: -0.15s;
-        }
-
-        @keyframes telegramLoader {
-            0% {
-                transform: translate(-50%, -50%) rotate(0deg);
-            }
-            100% {
-                transform: translate(-50%, -50%) rotate(360deg);
-            }
-        }
-
-        /* Footer Main Button Layout */
         .footer {
             padding: 16px 20px;
-            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            padding-bottom: calc(24px + env(safe-area-inset-bottom));
             background: var(--tg-theme-bg-color);
             display: none;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
 
         .tg-main-button {
             width: 100%;
-            height: 50px;
+            height: 54px;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             background-color: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.2s;
         }
 
-        .tg-main-button:active {
-            opacity: 0.85;
-        }
+        /* Класс для плавного скрытия элементов перед сменой текста */
+        .fade-out { opacity: 0; }
     </style>
 </head>
 <body>
 
 <div class="content" id="main-view">
     <div class="emoji-container">
-        <img id="status-emoji" src="https://raw.githubusercontent.com/goforbg/telegram-emoji-gifs/main/Duck/Duck.gif" alt="loading">
+        <img id="status-emoji" src="https://github.com/goforbg/telegram-emoji-gifs/blob/master/hour-glass.gif?raw=true" alt="status">
     </div>
     <div class="title" id="status-title">Загрузка...</div>
     <div class="subtitle" id="status-desc">Синхронизация с данными Telegram</div>
-    
-    <div class="loader-container" id="loader-ui">
-        <div class="telegram-loader"></div>
-    </div>
+    <div class="loader-placeholder"></div>
 </div>
 
 <div class="footer" id="footer">
@@ -168,13 +140,35 @@
     const tg = window.Telegram.WebApp;
     let parsedParams = {};
 
+    // Ссылки на GIF
+    const GIFS = {
+        WAIT: 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/hour-glass.gif?raw=true',
+        SUCCESS: 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/party-confetti.gif?raw=true',
+        ERROR: 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true'
+    };
+
     function init() {
         tg.ready();
         tg.expand();
-        
-        // Применяем цвета Telegram
         document.body.style.backgroundColor = tg.themeParams.bg_color || '#ffffff';
-        document.body.style.color = tg.themeParams.text_color || '#000000';
+    }
+
+    // Вспомогательная функция для красивого обновления UI
+    function updateUI(title, desc, emojiSrc) {
+        const titleEl = document.getElementById('status-title');
+        const descEl = document.getElementById('status-desc');
+        const emojiEl = document.getElementById('status-emoji');
+
+        // Кратковременное затухание для плавности
+        [titleEl, descEl].forEach(el => el.classList.add('fade-out'));
+        
+        setTimeout(() => {
+            titleEl.innerText = title;
+            descEl.innerText = desc;
+            if (emojiSrc) emojiEl.src = emojiSrc;
+            
+            [titleEl, descEl].forEach(el => el.classList.remove('fade-out'));
+        }, 200);
     }
 
     function parseParams() {
@@ -202,8 +196,7 @@
     }
 
     async function performRedirect() {
-        document.getElementById('status-title').innerText = 'Подготовка...';
-        document.getElementById('status-desc').innerText = 'Подключаемся к серверу SHARD';
+        updateUI('Подготовка...', 'Подключаемся к серверу SHARD', GIFS.WAIT);
 
         try {
             const requestData = {
@@ -226,13 +219,9 @@
             const data = await response.json();
             if (!response.ok || !data.success) throw new Error(data.error || 'Ошибка сервера');
 
-            document.getElementById('status-title').innerText = 'Готово';
-            document.getElementById('status-desc').innerText = 'Переходим в диалог с администратором';
-            document.getElementById('loader-ui').style.display = 'none';
+            // Успех
+            updateUI('Почти готово', 'Переходим в диалог с администратором', GIFS.SUCCESS);
             
-            // Меняем эмодзи на "Rocket" (Ракета) при успехе
-            document.getElementById('status-emoji').src = 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/party-confetti.gif?raw=true';
-
             const text = 'Здравствуйте, я из канала SHARD по поводу задания!';
             const username = data.username || 'shardtask_bot';
             let redirectUrl = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
@@ -245,11 +234,11 @@
                 }
             }
 
+            // Задержка, чтобы пользователь увидел "Success" анимацию
             setTimeout(() => {
                 tg.openTelegramLink(redirectUrl);
-                // Подстраховка для десктопа
-                setTimeout(() => { tg.close(); }, 1000);
-            }, 1000);
+                setTimeout(() => { tg.close(); }, 1200);
+            }, 1500);
 
         } catch (error) {
             showError('Ошибка связи', 'Не удалось соединиться с сервером. Проверьте интернет.');
@@ -257,17 +246,15 @@
     }
 
     function showError(title, msg) {
-        document.getElementById('status-emoji').src = 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true';
-        document.getElementById('status-title').innerText = title;
-        document.getElementById('status-desc').innerText = msg;
-        document.getElementById('loader-ui').style.display = 'none';
+        updateUI(title, msg, GIFS.ERROR);
         document.getElementById('footer').style.display = 'block';
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         init();
         if (parseParams()) {
-            setTimeout(performRedirect, 800);
+            // Небольшая пауза перед началом для эффекта "загрузки"
+            setTimeout(performRedirect, 1000);
         }
     });
 </script>
