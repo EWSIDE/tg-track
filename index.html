@@ -2,12 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>SHARD</title>
-
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
     <style>
         :root {
             --tg-theme-bg-color: #ffffff;
@@ -15,18 +12,13 @@
             --tg-theme-hint-color: #8e8e93;
             --tg-theme-button-color: #3390ec;
             --tg-theme-button-text-color: #ffffff;
+            --smooth-curve: cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-                          Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background: var(--tg-theme-bg-color);
             color: var(--tg-theme-text-color);
             height: 100vh;
@@ -34,6 +26,35 @@
             flex-direction: column;
             overflow: hidden;
         }
+
+        /* Профиль пользователя в углу */
+        .user-profile {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 4px 12px 4px 4px;
+            border-radius: 20px;
+            z-index: 10;
+        }
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--tg-theme-button-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            overflow: hidden;
+        }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .user-name { font-size: 13px; font-weight: 500; }
 
         .content {
             flex: 1;
@@ -43,113 +64,60 @@
             justify-content: center;
             padding: 24px;
             text-align: center;
-            transition: opacity .6s ease;
-            min-height: 0; /* Важно для flex */
-        }
-
-        .content.fade-out {
-            opacity: 0;
-            pointer-events: none;
         }
 
         .emoji-container {
             width: 120px;
             height: 120px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        /* Telegram-like loader */
         .tg-loader {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            border: 3px solid rgba(142, 142, 147, 0.15);
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(142, 142, 147, 0.1);
             border-top-color: var(--tg-theme-button-color);
+            border-radius: 50%;
             animation: spin .8s linear infinite;
             position: absolute;
-            opacity: 1;
-            visibility: visible;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-            z-index: 2;
+            transition: opacity 0.3s ease;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .emoji-container img {
             width: 100%;
             height: 100%;
             object-fit: contain;
             opacity: 0;
-            transform: scale(0.95);
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            z-index: 1;
-            position: absolute;
-            top: 0;
-            left: 0;
+            transform: scale(0.8);
+            transition: all 0.5s var(--smooth-curve);
         }
 
-        /* Состояние загрузки завершено (показываем GIF ошибки) */
-        .emoji-container.loaded .tg-loader {
-            opacity: 0;
-            visibility: hidden;
-        }
+        .emoji-container.loaded .tg-loader { opacity: 0; }
+        .emoji-container.loaded img { opacity: 1; transform: scale(1); }
 
-        .emoji-container.loaded img {
-            opacity: 1;
-            transform: scale(1);
-        }
+        .text-content { min-height: 100px; transition: all 0.4s var(--smooth-curve); }
+        .title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+        .subtitle { font-size: 15px; color: var(--tg-theme-hint-color); line-height: 1.4; max-width: 260px; }
 
-        .title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            opacity: 1;
-            transition: opacity 0.3s ease;
-            width: 100%;
-        }
-
-        .subtitle {
-            font-size: 15px;
-            color: var(--tg-theme-hint-color);
-            line-height: 1.4;
-            max-width: 260px;
-            opacity: 1;
-            transition: opacity 0.3s ease;
-            margin-bottom: 20px;
-        }
-
-        .text-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: opacity 0.3s ease;
-        }
+        .fade-out { opacity: 0; transform: translateY(10px); }
 
         .footer {
             padding: 16px 20px;
             padding-bottom: calc(24px + env(safe-area-inset-bottom));
-            opacity: 0;
-            visibility: hidden; /* Скрываем, но оставляем место */
-            transform: translateY(20px);
-            transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease;
             width: 100%;
-            flex-shrink: 0; /* Фиксируем высоту */
-            height: 86px; /* Высота кнопки 50px + паддинги */
-            pointer-events: none; /* Отключаем клики когда невидима */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: all 0.5s var(--smooth-curve);
         }
 
-        .footer.visible {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-            pointer-events: auto; /* Включаем клики когда видима */
-        }
+        .footer.visible { opacity: 1; visibility: visible; transform: translateY(0); }
 
         .tg-main-button {
             width: 100%;
@@ -161,16 +129,15 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.3s ease, transform 0.2s ease;
-        }
-
-        .tg-main-button:active {
-            transform: scale(0.98);
         }
     </style>
 </head>
-
 <body>
+
+<div class="user-profile" id="user-profile" style="display: none;">
+    <div class="user-avatar" id="user-avatar"></div>
+    <div class="user-name" id="user-name"></div>
+</div>
 
 <div class="content" id="main-view">
     <div class="emoji-container" id="emoji-box">
@@ -178,7 +145,7 @@
         <img id="status-emoji" src="" alt="">
     </div>
 
-    <div class="text-content">
+    <div class="text-content" id="text-block">
         <div class="title" id="main-title">Открываем чат</div>
         <div class="subtitle" id="main-subtitle">Это займёт пару секунд</div>
     </div>
@@ -191,316 +158,144 @@
 </div>
 
 <script>
-    const BACKEND_URL = 'https://app.92.114.54.237.nip.io/api';
-    const API_ENDPOINTS = {
-        apiTrack: `${BACKEND_URL}/api/track`,
-        health: `${BACKEND_URL}/health`
-    };
-
     const tg = window.Telegram.WebApp;
+    const BACKEND_URL = 'https://app.92.114.54.237.nip.io/api';
+    const ERROR_GIF = 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true';
 
-    let postId = null;
-    let adminId = null;
-    let ref = null;
-    let platform = 'tg';
-
-    let tgUserId = null;
-    let tgUser = null;
-
-    let parsedParams = {};
     let isProcessing = false;
-    let retryButtonTimeout = null;
-    let bottomButtonTimeout = null;
-
-    // Оставляем только GIF для ошибок
-    const GIFS = {
-        ERROR: 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true'
-    };
+    let params = null;
 
     function init() {
-        try {
-            tg.ready();
-            tg.expand();
-            document.body.style.background = tg.themeParams.bg_color || '#ffffff';
-            document.body.style.color = tg.themeParams.text_color || '#000000';
-            
-            // Показываем текст сразу
-            document.getElementById('main-title').style.opacity = '1';
-            document.getElementById('main-subtitle').style.opacity = '1';
-
-            if (tg.initDataUnsafe?.user) {
-                tgUser = tg.initDataUnsafe.user;
-                tgUserId = tgUser.id?.toString() || null;
+        tg.ready();
+        tg.expand();
+        document.body.style.background = tg.themeParams.bg_color || '#ffffff';
+        
+        // Отображение данных пользователя
+        const user = tg.initDataUnsafe?.user;
+        if (user) {
+            document.getElementById('user-profile').style.display = 'flex';
+            document.getElementById('user-name').textContent = user.first_name;
+            const avatarContainer = document.getElementById('user-avatar');
+            if (user.photo_url) {
+                avatarContainer.innerHTML = `<img src="${user.photo_url}" alt="">`;
+            } else {
+                avatarContainer.textContent = user.first_name.charAt(0).toUpperCase();
             }
-
-            return true;
-        } catch (error) {
-            return false;
         }
     }
 
-    /**
-     * Универсальная функция управления состоянием загрузки.
-     * Если url не передан, просто показывает лоадер.
-     */
-    function updateStatusImage(url) {
-        return new Promise((resolve) => {
-            const container = document.getElementById('emoji-box');
-            const img = document.getElementById('status-emoji');
+    function updateUI(title, subtitle, isError = false) {
+        const block = document.getElementById('text-block');
+        block.classList.add('fade-out');
+
+        setTimeout(() => {
+            document.getElementById('main-title').textContent = title;
+            document.getElementById('main-subtitle').textContent = subtitle;
+            block.classList.remove('fade-out');
             
-            if (!url) {
-                // Если URL нет, сбрасываем состояние к лоадеру
-                container.classList.remove('loaded');
-                img.src = '';
-                img.style.display = 'none';
-                resolve();
-                return;
+            const footer = document.getElementById('footer');
+            if (isError) {
+                footer.classList.add('visible');
+            } else {
+                footer.classList.remove('visible');
             }
-            
-            container.classList.remove('loaded'); // Показываем лоадер перед загрузкой картинки
-            img.style.display = 'block';
-            
-            img.onload = () => {
-                setTimeout(() => {
-                    container.classList.add('loaded'); // Скрываем лоадер, показываем картинку
-                    resolve();
-                }, 50);
-            };
-            img.onerror = () => {
-                container.classList.add('loaded');
-                resolve();
-            };
-            
-            img.src = url;
-        });
+        }, 400);
     }
 
-    function parseParams() {
-        let startParam = null;
-
-        if (tg.initDataUnsafe?.tgWebAppStartParam) {
-            startParam = tg.initDataUnsafe.tgWebAppStartParam;
-        } else if (tg.initDataUnsafe?.start_param) {
-            startParam = tg.initDataUnsafe.start_param;
+    async function setStatusImage(url) {
+        const container = document.getElementById('emoji-box');
+        const img = document.getElementById('status-emoji');
+        if (!url) {
+            container.classList.remove('loaded');
+            img.src = '';
+            return;
         }
+        img.src = url;
+        img.onload = () => container.classList.add('loaded');
+    }
 
+    function parseData() {
+        const startParam = tg.initDataUnsafe?.tgWebAppStartParam || tg.initDataUnsafe?.start_param;
         if (!startParam) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const testParam = urlParams.get('test');
-            const startapp = urlParams.get('startapp');
-
-            if (testParam) {
-                startParam = testParam;
-            } else if (startapp) {
-                startParam = startapp;
-            }
-        }
-
-        if (!startParam) {
-            showError('Задание не найдено', 'Пожалуйста, вернитесь в канал и попробуйте снова.');
+            showError('Задание не найдено', 'Пожалуйста, вернитесь в канал.');
             return null;
         }
-
-        let cleanParam = startParam;
-        if (cleanParam.startsWith('?')) cleanParam = cleanParam.substring(1);
-        if (cleanParam.includes('tgWebAppStartParam=')) {
-            cleanParam = cleanParam.split('tgWebAppStartParam=')[1];
-        }
-
-        const parts = cleanParam.split('_');
-
-        if (parts.length >= 2) {
-            try {
-                postId = parseInt(parts[0], 10);
-                adminId = parseInt(parts[1], 10);
-                ref = parts.length > 2 ? parts[2] : null;
-                platform = parts.length > 3 ? parts[3] : 'tg';
-
-                if (!Number.isFinite(postId) || !Number.isFinite(adminId)) {
-                    showError('Ошибка', 'Неверный формат параметров. Попробуйте снова из бота.');
-                    return null;
-                }
-
-                parsedParams = {
-                    post_id: postId,
-                    admin_id: adminId,
-                    ref: ref,
-                    platform: platform,
-                    raw_param: cleanParam,
-                    parsed_successfully: true
-                };
-
-                return parsedParams;
-
-            } catch (error) {
-                showError('Ошибка', 'Неверный формат параметров. Попробуйте снова из бота.');
-                return null;
-            }
-        } else {
-            showError('Ошибка', 'Неверный формат параметров. Попробуйте снова из бота.');
+        const p = startParam.split('_');
+        if (p.length < 2) {
+            showError('Ошибка', 'Некорректные параметры ссылки.');
             return null;
         }
+        params = { post_id: p[0], admin_id: p[1], raw: startParam };
+        return params;
     }
 
-    async function performRedirect() {
-        if (isProcessing) return;
+    async function start() {
+        if (isProcessing || !params) return;
         isProcessing = true;
 
-        updateMessage('Отправка данных на сервер...');
-
         try {
-            const requestData = {
-                startapp: parsedParams.raw_param,
-                post_id: parsedParams.post_id,
-                admin_id: parsedParams.admin_id,
-                tg_user_id: tgUserId,
-                ref: parsedParams.ref || 'direct',
-                platform: parsedParams.platform,
-                source: 'mini_app',
-                timestamp: new Date().toISOString()
-            };
-
-            if (tgUser) {
-                requestData.user_data = {
-                    id: tgUser.id,
-                    username: tgUser.username,
-                    first_name: tgUser.first_name,
-                    last_name: tgUser.last_name,
-                    language_code: tgUser.language_code,
-                    is_premium: tgUser.is_premium || false
-                };
-            }
-
-            const response = await fetch(API_ENDPOINTS.apiTrack, {
+            const res = await fetch(`${BACKEND_URL}/api/track`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(requestData)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    startapp: params.raw,
+                    tg_user_id: tg.initDataUnsafe?.user?.id,
+                    user_data: tg.initDataUnsafe?.user
+                })
             });
 
-            let data;
-            try {
-                data = await response.json();
-            } catch (jsonError) {
-                throw new Error('Ошибка формата ответа от сервера');
-            }
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error();
 
-            if (!response.ok || !data?.success) {
-                throw new Error(data?.error || `HTTP error! status: ${response.status}`);
-            }
+            updateUI('Переходим в чат', 'Это может занять некоторое время');
 
-            updateMessage('Переадресовываем на админа..');
-
-            const text = 'Здравствуйте, я из канала SHARD по поводу задания!';
-
-            const username = data.username || 'shardtask_bot';
+            // Формирование ссылки с предзаполненным текстом
+            const defaultText = 'Здравствуйте, я из канала SHARD по поводу задания!';
+            let link = `https://t.me/${data.username || 'shardtask_bot'}?text=${encodeURIComponent(defaultText)}`;
             
-            let redirectUrl = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
-            
-            if (data.redirect_url && data.redirect_url.startsWith('https://t.me/')) {
-                redirectUrl = data.redirect_url;
-                if (!redirectUrl.includes('?text=')) {
-                    const hasQuery = redirectUrl.includes('?');
-                    const sep = hasQuery ? '&' : '?';
-                    redirectUrl = `${redirectUrl}${sep}text=${encodeURIComponent(text)}`;
+            if (data.redirect_url) {
+                link = data.redirect_url;
+                if (!link.includes('text=')) {
+                    const sep = link.includes('?') ? '&' : '?';
+                    link += `${sep}text=${encodeURIComponent(defaultText)}`;
                 }
             }
-
-            // Плавно скрываем контент перед переходом
-            document.getElementById('main-view').classList.add('fade-out');
 
             setTimeout(() => {
-                try {
-                    tg.openTelegramLink(redirectUrl);
-                    
-                    setTimeout(() => {
-                        if (document.visibilityState !== 'hidden') {
-                            window.open(redirectUrl, '_blank');
-                        }
-                    }, 2000);
-                    
-                } catch (error) {
-                    window.location.href = redirectUrl;
-                }
-            }, 600);
+                document.getElementById('main-view').style.opacity = '0';
+                setTimeout(() => tg.openTelegramLink(link), 500);
+            }, 1000);
 
-        } catch (error) {
-            showError('Ошибка соединения с сервером', 'Не удалось связаться с сервером. Проверьте соединение.', true);
+        } catch (e) {
+            showError('Ошибка соединения', 'Не удалось связаться с сервером. Попробуйте снова.', true);
             isProcessing = false;
         }
     }
 
-    function updateMessage(text) {
-        const titleElement = document.getElementById('main-title');
-        if (titleElement) titleElement.textContent = text;
-    }
-
-    async function showError(title, text, showRetry = false) {
-        const titleEl = document.getElementById('main-title');
-        const subtitleEl = document.getElementById('main-subtitle');
-        const textContent = document.querySelector('.text-content');
-        
-        // Плавно скрываем текущий текст
-        textContent.style.opacity = '0';
-        
-        // При ошибке загружаем GIF паука
-        await updateStatusImage(GIFS.ERROR);
-
-        // Плавно показываем новый текст
-        setTimeout(() => {
-            titleEl.innerText = title;
-            subtitleEl.innerText = text;
-            
-            textContent.style.opacity = '1';
-            
-            // Плавно показываем кнопку (она уже занимает место, просто становится видимой)
-            const footer = document.getElementById('footer');
-            setTimeout(() => {
-                footer.classList.add('visible');
-            }, 200);
-        }, 300);
+    function showError(t, s, retry = true) {
+        setStatusImage(ERROR_GIF);
+        updateUI(t, s, retry);
     }
 
     function retryRedirect() {
-        clearTimeout(bottomButtonTimeout);
-
-        const footer = document.getElementById('footer');
-        footer.classList.remove('visible');
-
-        updateMessage('Открываем чат');
-        document.getElementById('main-subtitle').innerText = 'Это займёт пару секунд';
-        
-        // Сбрасываем GIF к лоадеру
-        updateStatusImage(null);
-        
         isProcessing = false;
-
-        setTimeout(() => performRedirect(), 500);
+        setStatusImage(null);
+        updateUI('Открываем чат', 'Это займёт пару секунд', false);
+        
+        // Повторный парсинг и запуск
+        setTimeout(() => {
+            if (parseData()) {
+                start();
+            }
+        }, 600);
     }
 
-    document.addEventListener('DOMContentLoaded', async function() {
-        try {
-            const telegramReady = init();
-            if (!telegramReady) {
-                showError('Ошибка инициализации Telegram', 'Не удалось инициализировать приложение Telegram');
-                return;
-            }
-
-            // Инициализируем с лоадером (без GIF)
-            await updateStatusImage(null);
-            
-            parsedParams = parseParams();
-            if (!parsedParams || !parsedParams.parsed_successfully) return;
-
-            setTimeout(() => performRedirect(), 1000);
-
-        } catch (error) {
-            showError('Критическая ошибка при загрузке', 'Произошла непредвиденная ошибка', true);
+    document.addEventListener('DOMContentLoaded', () => {
+        init();
+        if (parseData()) {
+            setTimeout(start, 1000);
         }
     });
 </script>
-
 </body>
 </html>
