@@ -154,8 +154,8 @@
     </div>
 
     <div class="text-content" id="text-block">
-        <div class="title" id="main-title">Открываем чат</div>
-        <div class="subtitle" id="main-subtitle">Это займёт пару секунд</div>
+        <div class="title" id="main-title">Открываем диалог</div>
+        <div class="subtitle" id="main-subtitle">Пожалуйста, не закрывайте страницу.</div>
     </div>
 </div>
 
@@ -265,7 +265,9 @@
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error();
 
-            updateUI('Переходим в чат', 'Пожалуйста, подождите...');
+            // Замена 2: Состояние перехода
+            updateUI('Открываем диалог', 'Пожалуйста, не закрывайте страницу');
+            
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
             const defaultText = 'Здравствуйте, я из канала SHARD по поводу задания!';
@@ -305,4 +307,3 @@
 </script>
 </body>
 </html>
-
