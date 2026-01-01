@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SHARD</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -11,9 +11,9 @@
             --tg-theme-secondary-bg-color: #f0f0f0;
             --tg-theme-text-color: #000000;
             --tg-theme-hint-color: #999999;
+            --tg-theme-link-color: #2481cc;
             --tg-theme-button-color: #3390ec;
             --tg-theme-button-text-color: #ffffff;
-            --tg-theme-destructive-text-color: #ff3b30;
         }
 
         * { 
@@ -24,157 +24,164 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--tg-theme-bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji';
+            background-color: var(--tg-theme-bg-color);
             color: var(--tg-theme-text-color);
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
             overflow: hidden;
         }
 
-        .container {
-            width: 100%;
-            max-width: 300px;
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
             text-align: center;
         }
 
-        /* Анимированный лоадер */
-        .loader-wrapper {
-            margin-bottom: 24px;
-            display: flex;
-            justify-content: center;
+        /* Telegram Emoji Styling */
+        .emoji-container {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 20px;
         }
 
-        .loader {
-            width: 44px;
-            height: 44px;
-            border: 3px solid var(--tg-theme-secondary-bg-color);
-            border-top: 3px solid var(--tg-theme-button-color);
-            border-radius: 50%;
-            animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-        }
-
-        /* Текстовые стили */
-        .message {
-            font-size: 16px;
-            font-weight: 500;
-            line-height: 1.4;
-            color: var(--tg-theme-text-color);
-        }
-
-        /* Прогресс-бар */
-        .progress-container {
+        .emoji-container img {
             width: 100%;
-            height: 4px;
-            background: var(--tg-theme-secondary-bg-color);
-            border-radius: 2px;
-            margin-top: 20px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
             height: 100%;
-            width: 0%;
-            background: var(--tg-theme-button-color);
-            transition: width 0.3s ease;
+            object-fit: contain;
         }
 
-        /* Ошибки */
-        .error-view {
-            display: none;
+        /* Typography following Telegram UI */
+        .title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
         }
 
-        .status-icon {
-            width: 56px;
-            height: 56px;
-            background: rgba(255, 59, 48, 0.1);
-            border-radius: 50%;
+        .subtitle {
+            font-size: 15px;
+            color: var(--tg-theme-hint-color);
+            line-height: 1.4;
+            max-width: 260px;
+        }
+
+        /* Modern Telegram Loader */
+        .loader-container {
+            margin-top: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 16px;
-            color: var(--tg-theme-destructive-text-color);
-            font-size: 24px;
-            font-weight: bold;
         }
 
-        /* Кнопки */
-        .btn-container {
-            position: fixed;
-            bottom: 24px;
-            left: 20px;
-            right: 20px;
+        .telegram-loader {
+            width: 48px;
+            height: 48px;
+            position: relative;
+        }
+
+        .telegram-loader::before,
+        .telegram-loader::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            animation: telegramLoader 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+
+        .telegram-loader::before {
+            width: 100%;
+            height: 100%;
+            border: 3px solid transparent;
+            border-top-color: var(--tg-theme-button-color);
+        }
+
+        .telegram-loader::after {
+            width: 80%;
+            height: 80%;
+            border: 3px solid transparent;
+            border-top-color: var(--tg-theme-button-color);
+            animation-delay: -0.15s;
+        }
+
+        @keyframes telegramLoader {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        /* Footer Main Button Layout */
+        .footer {
+            padding: 16px 20px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            background: var(--tg-theme-bg-color);
             display: none;
         }
 
-        .tg-button {
+        .tg-main-button {
             width: 100%;
-            padding: 14px;
-            background: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
+            height: 50px;
             border: none;
             border-radius: 12px;
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
+            transition: opacity 0.2s;
         }
 
-        .tg-button:active {
-            opacity: 0.9;
-            transform: scale(0.98);
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .tg-main-button:active {
+            opacity: 0.85;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="loading-view">
-        <div class="loader-wrapper">
-            <div class="loader"></div>
-        </div>
-        <div class="message" id="status-text">Переадресовываем на админа...</div>
-        <div class="progress-container">
-            <div class="progress-bar" id="pb"></div>
-        </div>
+<div class="content" id="main-view">
+    <div class="emoji-container">
+        <img id="status-emoji" src="https://raw.githubusercontent.com/goforbg/telegram-emoji-gifs/main/Duck/Duck.gif" alt="loading">
     </div>
-
-    <div id="error-view" class="error-view">
-        <div class="status-icon">!</div>
-        <div class="message">Произошла ошибка</div>
-        <div style="color: var(--tg-theme-hint-color); font-size: 14px; margin-top: 8px;" id="error-msg"></div>
+    <div class="title" id="status-title">Загрузка...</div>
+    <div class="subtitle" id="status-desc">Синхронизация с данными Telegram</div>
+    
+    <div class="loader-container" id="loader-ui">
+        <div class="telegram-loader"></div>
     </div>
 </div>
 
-<div class="btn-container" id="footer">
-    <button class="tg-button" onclick="location.reload()">Попробовать снова</button>
+<div class="footer" id="footer">
+    <button class="tg-main-button" onclick="location.reload()">Попробовать снова</button>
 </div>
 
 <script>
     const BACKEND_URL = 'https://app.92.114.54.237.nip.io/api';
     const tg = window.Telegram.WebApp;
-    let isProcessing = false;
     let parsedParams = {};
 
     function init() {
         tg.ready();
         tg.expand();
-        // Синхронизация цветов темы
-        if (tg.themeParams.bg_color) document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color);
-        if (tg.themeParams.button_color) document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color);
+        
+        // Применяем цвета Telegram
+        document.body.style.backgroundColor = tg.themeParams.bg_color || '#ffffff';
+        document.body.style.color = tg.themeParams.text_color || '#000000';
     }
 
     function parseParams() {
         let startParam = tg.initDataUnsafe?.start_param || new URLSearchParams(window.location.search).get('startapp');
         
         if (!startParam) {
-            showError('Задание не найдено');
+            showError('Задание не найдено', 'Пожалуйста, вернитесь в канал и попробуйте снова.');
             return null;
         }
 
@@ -189,15 +196,14 @@
             };
             return parsedParams;
         } else {
-            showError('Неверный формат параметров');
+            showError('Ошибка данных', 'Неверный формат параметров запуска.');
             return null;
         }
     }
 
     async function performRedirect() {
-        if (isProcessing) return;
-        isProcessing = true;
-        updateProgress(40);
+        document.getElementById('status-title').innerText = 'Подготовка...';
+        document.getElementById('status-desc').innerText = 'Подключаемся к серверу SHARD';
 
         try {
             const requestData = {
@@ -220,9 +226,13 @@
             const data = await response.json();
             if (!response.ok || !data.success) throw new Error(data.error || 'Ошибка сервера');
 
-            updateProgress(100);
+            document.getElementById('status-title').innerText = 'Готово';
+            document.getElementById('status-desc').innerText = 'Переходим в диалог с администратором';
+            document.getElementById('loader-ui').style.display = 'none';
+            
+            // Меняем эмодзи на "Rocket" (Ракета) при успехе
+            document.getElementById('status-emoji').src = 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/party-confetti.gif?raw=true';
 
-            // ТВОЯ ОРИГИНАЛЬНАЯ ПЕРЕАДРЕСАЦИЯ
             const text = 'Здравствуйте, я из канала SHARD по поводу задания!';
             const username = data.username || 'shardtask_bot';
             let redirectUrl = `https://t.me/${username}?text=${encodeURIComponent(text)}`;
@@ -236,38 +246,28 @@
             }
 
             setTimeout(() => {
-                try {
-                    tg.openTelegramLink(redirectUrl);
-                    setTimeout(() => {
-                        if (document.visibilityState !== 'hidden') {
-                            window.open(redirectUrl, '_blank');
-                        }
-                    }, 2000);
-                } catch (error) {
-                    window.location.href = redirectUrl;
-                }
-            }, 800);
+                tg.openTelegramLink(redirectUrl);
+                // Подстраховка для десктопа
+                setTimeout(() => { tg.close(); }, 1000);
+            }, 1000);
 
         } catch (error) {
-            showError('Ошибка соединения с сервером');
+            showError('Ошибка связи', 'Не удалось соединиться с сервером. Проверьте интернет.');
         }
     }
 
-    function updateProgress(v) {
-        document.getElementById('pb').style.width = v + '%';
-    }
-
-    function showError(m) {
-        document.getElementById('loading-view').style.display = 'none';
-        document.getElementById('error-view').style.display = 'block';
+    function showError(title, msg) {
+        document.getElementById('status-emoji').src = 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true';
+        document.getElementById('status-title').innerText = title;
+        document.getElementById('status-desc').innerText = msg;
+        document.getElementById('loader-ui').style.display = 'none';
         document.getElementById('footer').style.display = 'block';
-        document.getElementById('error-msg').textContent = m;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         init();
         if (parseParams()) {
-            setTimeout(performRedirect, 1000);
+            setTimeout(performRedirect, 800);
         }
     });
 </script>
