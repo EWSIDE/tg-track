@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SHARD</title>
+    <title>Apps</title>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
@@ -154,7 +154,7 @@
         if (!startParam) {
             showError(
                 'Задание не найдено',
-                'Вернитесь в канал и попробуйте снова'
+                'Пожалуйста, вернитесь в канал и попробуйте снова.'
             );
             return null;
         }
@@ -163,7 +163,7 @@
         if (parts.length < 2) {
             showError(
                 'Ошибка данных',
-                'Неверный формат запуска'
+                'Пожалуйста, вернитесь в канал и попробуйте снова.'
             );
             return null;
         }
@@ -208,8 +208,8 @@
 
         } catch {
             showError(
-                'Ошибка связи',
-                'Не удалось подключиться к серверу'
+                'Ошибка',
+                'Сервер в данный момент не отвечает'
             );
         }
     }
