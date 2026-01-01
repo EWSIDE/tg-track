@@ -30,31 +30,30 @@
 
         .user-profile {
             position: absolute;
-            top: 40px; /* Опустили чуть ниже от края */
-            left: 50%;
-            transform: translateX(-50%);
+            top: 16px;
+            left: 16px;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             z-index: 10;
         }
+        
         .user-avatar {
-            width: 48px;
-            height: 48px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: var(--tg-theme-button-color);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
-            font-weight: 400;
+            font-size: 14px;
+            font-weight: 500;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
         .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .user-name { font-size: 14px; font-weight: 500; opacity: 0.8; }
+        .user-name { font-size: 14px; font-weight: 500; opacity: 0.9; }
 
         .content {
             flex: 1;
@@ -63,7 +62,7 @@
             align-items: center;
             justify-content: center;
             padding: 24px;
-            margin-top: 40px; /* Компенсация высоты профиля для центровки лоадера */
+            transition: opacity 0.5s ease;
         }
 
         .emoji-container {
@@ -84,6 +83,7 @@
             border-radius: 50%;
             animation: spin .9s linear infinite;
             position: absolute;
+            z-index: 1;
             transition: opacity 0.3s ease;
         }
 
@@ -93,15 +93,22 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
+            position: relative;
+            z-index: 2;
             opacity: 0;
             transform: scale(0.8);
             transition: all 0.5s var(--smooth);
-            display: none; 
-            z-index: 5;
         }
 
-        .emoji-container.loaded .tg-loader { opacity: 0; visibility: hidden; }
-        .emoji-container.loaded .status-gif { opacity: 1; transform: scale(1); display: block; }
+        /* Класс, который вешается при успешной загрузке картинки */
+        .emoji-container.loaded .status-gif {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .emoji-container.loaded .tg-loader {
+            opacity: 0;
+            visibility: hidden;
+        }
 
         .text-content { min-height: 80px; text-align: center; }
         .title { font-size: 20px; font-weight: 500; margin-bottom: 8px; letter-spacing: -0.3px; }
@@ -129,7 +136,7 @@
             background: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
             font-size: 16px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
         }
     </style>
@@ -161,15 +168,18 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://app.92.114.54.237.nip.io/api';
-    // Добавили raw=true и проверку
-    const ERROR_GIF_URL = 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true';
+    const BACKEND_URL = 'https://app.92.114.54.237.nip.io';
+    
+    const LOADING_GIF_URL = 'https://raw.githubusercontent.com/goforbg/telegram-emoji-gifs/master/mail-box.gif';
+    const ERROR_GIF_URL = 'https://raw.githubusercontent.com/goforbg/telegram-emoji-gifs/master/spider-crawl-folder.gif';
 
     let isProcessing = false;
 
     function init() {
         tg.ready();
         tg.expand();
+        
+        // Установка цвета фона из темы Telegram
         document.body.style.background = tg.themeParams.bg_color || '#ffffff';
         
         const user = tg.initDataUnsafe?.user;
@@ -183,6 +193,30 @@
                 av.textContent = user.first_name.charAt(0).toUpperCase();
             }
         }
+    }
+
+    function setStatusImage(url) {
+        const container = document.getElementById('emoji-box');
+        const img = document.getElementById('status-emoji');
+        
+        // Сбрасываем состояние перед новой загрузкой
+        container.classList.remove('loaded');
+        
+        if (!url) return;
+
+        const preloader = new Image();
+        preloader.onload = () => {
+            img.src = url;
+            // Небольшой таймаут, чтобы браузер успел отрисовать кадр
+            setTimeout(() => {
+                container.classList.add('loaded');
+            }, 50);
+        };
+        preloader.onerror = () => {
+            console.error("Failed to load image");
+            container.classList.add('loaded'); // Убираем спиннер даже при ошибке
+        };
+        preloader.src = url;
     }
 
     function updateUI(title, subtitle, isError = false) {
@@ -200,30 +234,13 @@
         }, 300);
     }
 
-    function setStatusImage(url) {
-        const container = document.getElementById('emoji-box');
-        const img = document.getElementById('status-emoji');
-        
-        if (!url) {
-            container.classList.remove('loaded');
-            img.style.display = 'none';
-            img.src = '';
-            return;
-        }
-
-        // Принудительно показываем перед загрузкой для некоторых браузеров
-        img.style.display = 'block'; 
-        img.src = url + '&t=' + Date.now(); // Сброс кэша
-        
-        img.onload = () => {
-            container.classList.add('loaded');
-        };
-    }
-
     async function start() {
         if (isProcessing) return;
         
+        setStatusImage(LOADING_GIF_URL);
+
         const startParam = tg.initDataUnsafe?.tgWebAppStartParam || tg.initDataUnsafe?.start_param;
+        
         if (!startParam) {
             showError('Задание не найдено', 'Вернитесь в канал и попробуйте снова.');
             return;
@@ -231,19 +248,24 @@
 
         isProcessing = true;
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 сек таймаут
+
             const res = await fetch(`${BACKEND_URL}/api/track`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     startapp: startParam,
                     tg_user_id: tg.initDataUnsafe?.user?.id
-                })
+                }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error();
 
-            updateUI('Переходим в чат', 'Это может занять некоторое время');
+            updateUI('Переходим в чат', 'Пожалуйста, подождите, это займёт время.');
 
             const defaultText = 'Здравствуйте, я из канала SHARD по поводу задания!';
             let link = `https://t.me/${data.username || 'shardtask_bot'}?text=${encodeURIComponent(defaultText)}`;
@@ -258,10 +280,10 @@
             setTimeout(() => {
                 document.getElementById('main-view').style.opacity = '0';
                 setTimeout(() => tg.openTelegramLink(link), 500);
-            }, 1000);
+            }, 1500);
 
         } catch (e) {
-            showError('Ошибка соединения', 'Сервер временно недоступен.', true);
+            showError('Ошибка соединения', 'Сервер временно недоступен или ссылка недействительна.', true);
             isProcessing = false;
         }
     }
@@ -272,16 +294,14 @@
     }
 
     function retryRedirect() {
-        isProcessing = false;
-        setStatusImage(null);
-        updateUI('Открываем чат', 'Это займёт пару секунд', false);
-        setTimeout(start, 600);
+        window.location.reload();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    // Инициализация
+    window.onload = () => {
         init();
-        setTimeout(start, 800);
-    });
+        setTimeout(start, 400);
+    };
 </script>
 </body>
 </html>
