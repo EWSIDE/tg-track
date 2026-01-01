@@ -28,7 +28,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Центрированный профиль сверху */
+        /* Центрированный профиль */
         .user-profile {
             position: absolute;
             top: 16px;
@@ -199,9 +199,7 @@
     function setStatusImage(url) {
         const container = document.getElementById('emoji-box');
         const img = document.getElementById('status-emoji');
-        
         container.classList.remove('loaded');
-        
         if (!url) return;
 
         const preloader = new Image();
@@ -218,6 +216,12 @@
     }
 
     function updateUI(title, subtitle, isError = false) {
+        const currentTitle = document.getElementById('main-title').textContent;
+        const currentSubtitle = document.getElementById('main-subtitle').textContent;
+
+        // Обновляем только если текст реально отличается
+        if (currentTitle === title && currentSubtitle === subtitle && !isError) return;
+
         const block = document.getElementById('text-block');
         block.classList.add('fade-out');
 
@@ -238,13 +242,12 @@
 
     async function start() {
         if (isProcessing) return;
-        
         setStatusImage(LOADING_GIF_URL);
 
         const startParam = tg.initDataUnsafe?.tgWebAppStartParam || tg.initDataUnsafe?.start_param;
         
         if (!startParam) {
-            showError('Задание не найдено', 'Пожалуйста, используйте корректную ссылку из канала.');
+            showError('Задание не найдено', 'Пожалуйста, используйте ссылку из канала.');
             return;
         }
 
@@ -267,10 +270,6 @@
 
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error();
-
-            // Текст без точки при успешном получении ссылки
-            updateUI('Открываем диалог', 'Пожалуйста, не закрывайте страницу');
-            
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
             const defaultText = 'Здравствуйте, я из канала SHARD по поводу задания!';
@@ -289,7 +288,7 @@
             }, 1200);
 
         } catch (e) {
-            showError('Ошибка соединения', 'Не удалось связаться с сервером. Попробуйте позже.', true);
+            showError('Ошибка соединения', 'Не удалось связаться с сервером.', true);
             isProcessing = false;
         }
     }
