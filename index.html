@@ -65,12 +65,12 @@
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            border: 3px solid rgba(142, 142, 147, 0.25);
+            border: 3px solid rgba(142, 142, 147, 0.15);
             border-top-color: var(--tg-theme-button-color);
             animation: spin .8s linear infinite;
-            transition: opacity 0.3s ease;
             position: absolute;
-            z-index: 1; /* Чтобы был поверх картинки во время загрузки */
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 2;
         }
 
         @keyframes spin {
@@ -82,23 +82,26 @@
             height: 100%;
             object-fit: contain;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transform: scale(0.8);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            z-index: 1;
         }
 
-        /* Когда добавили класс loaded — скрываем лоадер и показываем картинку */
+        /* Состояние загрузки завершено */
         .emoji-container.loaded .tg-loader {
             opacity: 0;
-            pointer-events: none;
+            visibility: hidden;
         }
 
         .emoji-container.loaded img {
             opacity: 1;
+            transform: scale(1);
         }
 
         .title {
             font-size: 20px;
             font-weight: 600;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             transition: opacity 0.3s ease;
         }
 
@@ -112,8 +115,8 @@
 
         .footer {
             padding: 16px 20px;
-            padding-bottom: calc(16px + env(safe-area-inset-bottom));
-            display: none; /* Переключается через JS */
+            padding-bottom: calc(24px + env(safe-area-inset-bottom));
+            display: none;
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.4s ease, transform 0.4s ease;
@@ -143,14 +146,12 @@
 
 <div class="content" id="main-view">
     <div class="emoji-container" id="emoji-box">
-        <div class="tg-loader" id="loader" aria-label="loading"></div>
-        <img id="status-emoji"
-             src="https://github.com/goforbg/telegram-emoji-gifs/blob/master/hour-glass.gif?raw=true"
-             alt="loading">
+        <div class="tg-loader"></div>
+        <img id="status-emoji" src="" alt="">
     </div>
 
-    <div class="title">Открываем чат</div>
-    <div class="subtitle">Это займёт пару секунд</div>
+    <div class="title" id="main-title">Открываем чат</div>
+    <div class="subtitle" id="main-subtitle">Это займёт пару секунд</div>
 </div>
 
 <div class="footer" id="footer">
@@ -164,6 +165,12 @@
     const tg = window.Telegram.WebApp;
     let parsedParams = {};
 
+    // Основные GIF-ки
+    const GIFS = {
+        LOADING: 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/hour-glass.gif?raw=true',
+        ERROR: 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true'
+    };
+
     function init() {
         tg.ready();
         tg.expand();
@@ -171,11 +178,24 @@
         document.body.style.color = tg.themeParams.text_color || '#000000';
     }
 
-    function waitForImage(img) {
-        return new Promise(resolve => {
-            if (img.complete) return resolve();
-            img.onload = resolve;
-            img.onerror = resolve;
+    // Универсальная функция для смены GIF с показом лоадера
+    function updateStatusImage(url) {
+        return new Promise((resolve) => {
+            const container = document.getElementById('emoji-box');
+            const img = document.getElementById('status-emoji');
+            
+            container.classList.remove('loaded'); // Показываем лоадер
+            
+            img.onload = () => {
+                container.classList.add('loaded'); // Прячем лоадер, показываем GIF
+                resolve();
+            };
+            img.onerror = () => {
+                container.classList.add('loaded');
+                resolve();
+            };
+            
+            img.src = url;
         });
     }
 
@@ -184,96 +204,88 @@
                           new URLSearchParams(window.location.search).get('startapp');
 
         if (!startParam) {
-            showError('Задание не найдено', 'Вернитесь в канал и попробуйте снова.');
-            return null;
+            showError('Задание не найдено', 'Пожалуйста, вернитесь в канал и попробуйте снова.');
+            return false;
         }
 
         const parts = startParam.split('_');
         if (parts.length < 2) {
-            showError('Ошибка данных', 'Вернитесь в канал и попробуйте снова.');
-            return null;
+            showError('Ошибка данных', 'Некорректная ссылка. Попробуйте снова из бота.');
+            return false;
         }
 
         parsedParams = { post_id: +parts[0], admin_id: +parts[1], raw: startParam };
-        return parsedParams;
+        return true;
     }
 
     async function performRedirect() {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/track`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    startapp: parsedParams.raw,
-                    post_id: parsedParams.post_id,
-                    admin_id: parsedParams.admin_id,
-                    tg_user_id: tg.initDataUnsafe?.user?.id,
-                    user_data: tg.initDataUnsafe?.user || {}
-                })
-            });
+            // Запускаем запрос и минимальный таймер (чтобы GIF не мелькала слишком быстро)
+            const [response] = await Promise.all([
+                fetch(`${BACKEND_URL}/api/track`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        startapp: parsedParams.raw,
+                        post_id: parsedParams.post_id,
+                        admin_id: parsedParams.admin_id,
+                        tg_user_id: tg.initDataUnsafe?.user?.id,
+                        user_data: tg.initDataUnsafe?.user || {}
+                    })
+                }),
+                new Promise(r => setTimeout(r, 1500)) 
+            ]);
 
             const data = await response.json();
-            if (!data.success) throw new Error();
+            if (!data.success) throw new Error('API Error');
 
             const redirectUrl = data.redirect_url || `https://t.me/${data.username || 'shardtask_bot'}`;
 
             document.getElementById('main-view').classList.add('fade-out');
             setTimeout(() => {
                 tg.openTelegramLink(redirectUrl);
-                setTimeout(() => tg.close(), 600);
+                setTimeout(() => tg.close(), 1000);
             }, 600);
 
         } catch (e) {
-            showError('Ошибка', 'Сервер в данный момент не отвечает');
+            showError('Ошибка сервера', 'Не удалось связаться с сервером. Проверьте соединение.');
         }
     }
 
     async function showError(title, text) {
-        const titleEl = document.querySelector('.title');
-        const subtitleEl = document.querySelector('.subtitle');
-        const emojiBox = document.getElementById('emoji-box');
-        const emojiImg = document.getElementById('status-emoji');
-
-        // 1. Показываем лоадер снова, пока грузится GIF ошибки
-        emojiBox.classList.remove('loaded');
+        const titleEl = document.getElementById('main-title');
+        const subtitleEl = document.getElementById('main-subtitle');
         
-        // 2. Скрываем тексты
+        // Скрываем текущий текст
         titleEl.style.opacity = '0';
         subtitleEl.style.opacity = '0';
-        
-        // 3. Меняем GIF
-        emojiImg.src = 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true';
-        
-        // Ждем загрузки новой картинки
-        await waitForImage(emojiImg);
 
-        // 4. Текст и кнопка
+        // Загружаем GIF ошибки (лоадер будет крутиться, пока она не скачается)
+        await updateStatusImage(GIFS.ERROR);
+
+        // Обновляем и плавно показываем текст
         setTimeout(() => {
             titleEl.innerText = title;
             subtitleEl.innerText = text;
             titleEl.style.opacity = '1';
             subtitleEl.style.opacity = '1';
             
-            // Скрываем лоадер, показываем GIF ошибки
-            emojiBox.classList.add('loaded');
-            
             const footer = document.getElementById('footer');
             footer.style.display = 'block';
             setTimeout(() => footer.classList.add('show'), 50);
-        }, 300);
+        }, 200);
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
         init();
-        if (!parseParams()) return;
-
-        const emoji = document.getElementById('status-emoji');
-        await waitForImage(emoji);
-
-        // Убираем лоадер — показываем основную гифку
-        document.getElementById('emoji-box').classList.add('loaded');
         
-        setTimeout(performRedirect, 800);
+        // 1. Сначала загружаем основную GIF (часы)
+        await updateStatusImage(GIFS.LOADING);
+        
+        // 2. Только после этого проверяем параметры и делаем редирект
+        if (parseParams()) {
+            performRedirect();
+        }
     });
 </script>
 
