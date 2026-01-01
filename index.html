@@ -28,15 +28,18 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* Центрированный профиль сверху */
         .user-profile {
             position: absolute;
             top: 16px;
-            left: 16px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             flex-direction: row;
             align-items: center;
             gap: 10px;
             z-index: 10;
+            white-space: nowrap;
         }
         
         .user-avatar {
@@ -265,7 +268,7 @@
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error();
 
-            // Замена 2: Состояние перехода
+            // Текст без точки при успешном получении ссылки
             updateUI('Открываем диалог', 'Пожалуйста, не закрывайте страницу');
             
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
