@@ -12,7 +12,7 @@
             --tg-theme-hint-color: #8e8e93;
             --tg-theme-button-color: #3390ec;
             --tg-theme-button-text-color: #ffffff;
-            --smooth-curve: cubic-bezier(0.4, 0, 0.2, 1);
+            --smooth: cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -25,36 +25,36 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Профиль пользователя в углу */
         .user-profile {
             position: absolute;
-            top: 16px;
-            right: 16px;
+            top: 40px; /* Опустили чуть ниже от края */
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 8px;
-            background: rgba(0, 0, 0, 0.05);
-            padding: 4px 12px 4px 4px;
-            border-radius: 20px;
             z-index: 10;
         }
         .user-avatar {
-            width: 28px;
-            height: 28px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             background: var(--tg-theme-button-color);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
+            font-size: 18px;
+            font-weight: 400;
             overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
         .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .user-name { font-size: 13px; font-weight: 500; }
+        .user-name { font-size: 14px; font-weight: 500; opacity: 0.8; }
 
         .content {
             flex: 1;
@@ -63,13 +63,13 @@
             align-items: center;
             justify-content: center;
             padding: 24px;
-            text-align: center;
+            margin-top: 40px; /* Компенсация высоты профиля для центровки лоадера */
         }
 
         .emoji-container {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 30px;
+            width: 140px;
+            height: 140px;
+            margin-bottom: 24px;
             position: relative;
             display: flex;
             align-items: center;
@@ -79,55 +79,57 @@
         .tg-loader {
             width: 40px;
             height: 40px;
-            border: 3px solid rgba(142, 142, 147, 0.1);
+            border: 3px solid rgba(0, 0, 0, 0.05);
             border-top-color: var(--tg-theme-button-color);
             border-radius: 50%;
-            animation: spin .8s linear infinite;
+            animation: spin .9s linear infinite;
             position: absolute;
             transition: opacity 0.3s ease;
         }
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .emoji-container img {
+        .status-gif {
             width: 100%;
             height: 100%;
             object-fit: contain;
             opacity: 0;
             transform: scale(0.8);
-            transition: all 0.5s var(--smooth-curve);
+            transition: all 0.5s var(--smooth);
+            display: none; 
+            z-index: 5;
         }
 
-        .emoji-container.loaded .tg-loader { opacity: 0; }
-        .emoji-container.loaded img { opacity: 1; transform: scale(1); }
+        .emoji-container.loaded .tg-loader { opacity: 0; visibility: hidden; }
+        .emoji-container.loaded .status-gif { opacity: 1; transform: scale(1); display: block; }
 
-        .text-content { min-height: 100px; transition: all 0.4s var(--smooth-curve); }
-        .title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-        .subtitle { font-size: 15px; color: var(--tg-theme-hint-color); line-height: 1.4; max-width: 260px; }
+        .text-content { min-height: 80px; text-align: center; }
+        .title { font-size: 20px; font-weight: 500; margin-bottom: 8px; letter-spacing: -0.3px; }
+        .subtitle { font-size: 15px; color: var(--tg-theme-hint-color); line-height: 1.4; max-width: 250px; font-weight: 400; }
 
-        .fade-out { opacity: 0; transform: translateY(10px); }
+        .fade-out { opacity: 0; transform: translateY(10px); transition: 0.3s var(--smooth); }
 
         .footer {
-            padding: 16px 20px;
+            padding: 20px;
             padding-bottom: calc(24px + env(safe-area-inset-bottom));
             width: 100%;
             opacity: 0;
             visibility: hidden;
             transform: translateY(20px);
-            transition: all 0.5s var(--smooth-curve);
+            transition: all 0.6s var(--smooth);
         }
 
         .footer.visible { opacity: 1; visibility: visible; transform: translateY(0); }
 
         .tg-main-button {
             width: 100%;
-            height: 50px;
+            height: 54px;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             background: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
         }
     </style>
@@ -141,8 +143,8 @@
 
 <div class="content" id="main-view">
     <div class="emoji-container" id="emoji-box">
-        <div class="tg-loader"></div>
-        <img id="status-emoji" src="" alt="">
+        <div class="tg-loader" id="spinner"></div>
+        <img class="status-gif" id="status-emoji" src="" alt="">
     </div>
 
     <div class="text-content" id="text-block">
@@ -160,26 +162,25 @@
 <script>
     const tg = window.Telegram.WebApp;
     const BACKEND_URL = 'https://app.92.114.54.237.nip.io/api';
-    const ERROR_GIF = 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true';
+    // Добавили raw=true и проверку
+    const ERROR_GIF_URL = 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true';
 
     let isProcessing = false;
-    let params = null;
 
     function init() {
         tg.ready();
         tg.expand();
         document.body.style.background = tg.themeParams.bg_color || '#ffffff';
         
-        // Отображение данных пользователя
         const user = tg.initDataUnsafe?.user;
         if (user) {
             document.getElementById('user-profile').style.display = 'flex';
             document.getElementById('user-name').textContent = user.first_name;
-            const avatarContainer = document.getElementById('user-avatar');
+            const av = document.getElementById('user-avatar');
             if (user.photo_url) {
-                avatarContainer.innerHTML = `<img src="${user.photo_url}" alt="">`;
+                av.innerHTML = `<img src="${user.photo_url}" alt="">`;
             } else {
-                avatarContainer.textContent = user.first_name.charAt(0).toUpperCase();
+                av.textContent = user.first_name.charAt(0).toUpperCase();
             }
         }
     }
@@ -194,53 +195,48 @@
             block.classList.remove('fade-out');
             
             const footer = document.getElementById('footer');
-            if (isError) {
-                footer.classList.add('visible');
-            } else {
-                footer.classList.remove('visible');
-            }
-        }, 400);
+            if (isError) footer.classList.add('visible');
+            else footer.classList.remove('visible');
+        }, 300);
     }
 
-    async function setStatusImage(url) {
+    function setStatusImage(url) {
         const container = document.getElementById('emoji-box');
         const img = document.getElementById('status-emoji');
+        
         if (!url) {
             container.classList.remove('loaded');
+            img.style.display = 'none';
             img.src = '';
             return;
         }
-        img.src = url;
-        img.onload = () => container.classList.add('loaded');
-    }
 
-    function parseData() {
-        const startParam = tg.initDataUnsafe?.tgWebAppStartParam || tg.initDataUnsafe?.start_param;
-        if (!startParam) {
-            showError('Задание не найдено', 'Пожалуйста, вернитесь в канал.');
-            return null;
-        }
-        const p = startParam.split('_');
-        if (p.length < 2) {
-            showError('Ошибка', 'Некорректные параметры ссылки.');
-            return null;
-        }
-        params = { post_id: p[0], admin_id: p[1], raw: startParam };
-        return params;
+        // Принудительно показываем перед загрузкой для некоторых браузеров
+        img.style.display = 'block'; 
+        img.src = url + '&t=' + Date.now(); // Сброс кэша
+        
+        img.onload = () => {
+            container.classList.add('loaded');
+        };
     }
 
     async function start() {
-        if (isProcessing || !params) return;
-        isProcessing = true;
+        if (isProcessing) return;
+        
+        const startParam = tg.initDataUnsafe?.tgWebAppStartParam || tg.initDataUnsafe?.start_param;
+        if (!startParam) {
+            showError('Задание не найдено', 'Вернитесь в канал и попробуйте снова.');
+            return;
+        }
 
+        isProcessing = true;
         try {
             const res = await fetch(`${BACKEND_URL}/api/track`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    startapp: params.raw,
-                    tg_user_id: tg.initDataUnsafe?.user?.id,
-                    user_data: tg.initDataUnsafe?.user
+                    startapp: startParam,
+                    tg_user_id: tg.initDataUnsafe?.user?.id
                 })
             });
 
@@ -249,15 +245,13 @@
 
             updateUI('Переходим в чат', 'Это может занять некоторое время');
 
-            // Формирование ссылки с предзаполненным текстом
             const defaultText = 'Здравствуйте, я из канала SHARD по поводу задания!';
             let link = `https://t.me/${data.username || 'shardtask_bot'}?text=${encodeURIComponent(defaultText)}`;
             
             if (data.redirect_url) {
                 link = data.redirect_url;
                 if (!link.includes('text=')) {
-                    const sep = link.includes('?') ? '&' : '?';
-                    link += `${sep}text=${encodeURIComponent(defaultText)}`;
+                    link += (link.includes('?') ? '&' : '?') + `text=${encodeURIComponent(defaultText)}`;
                 }
             }
 
@@ -267,13 +261,13 @@
             }, 1000);
 
         } catch (e) {
-            showError('Ошибка соединения', 'Не удалось связаться с сервером. Попробуйте снова.', true);
+            showError('Ошибка соединения', 'Сервер временно недоступен.', true);
             isProcessing = false;
         }
     }
 
     function showError(t, s, retry = true) {
-        setStatusImage(ERROR_GIF);
+        setStatusImage(ERROR_GIF_URL);
         updateUI(t, s, retry);
     }
 
@@ -281,20 +275,12 @@
         isProcessing = false;
         setStatusImage(null);
         updateUI('Открываем чат', 'Это займёт пару секунд', false);
-        
-        // Повторный парсинг и запуск
-        setTimeout(() => {
-            if (parseData()) {
-                start();
-            }
-        }, 600);
+        setTimeout(start, 600);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         init();
-        if (parseData()) {
-            setTimeout(start, 1000);
-        }
+        setTimeout(start, 800);
     });
 </script>
 </body>
