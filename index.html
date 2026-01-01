@@ -60,42 +60,11 @@
             justify-content: center;
         }
 
-        /* Telegram-like loader */
-        .tg-loader {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            border: 3px solid rgba(142, 142, 147, 0.15);
-            border-top-color: var(--tg-theme-button-color);
-            animation: spin .8s linear infinite;
-            position: absolute;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-            z-index: 2;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
         .emoji-container img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            opacity: 0;
-            transform: scale(0.8);
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            z-index: 1;
-        }
-
-        /* Состояние загрузки завершено */
-        .emoji-container.loaded .tg-loader {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .emoji-container.loaded img {
-            opacity: 1;
-            transform: scale(1);
+            border-radius: 8px;
         }
 
         .title {
@@ -146,8 +115,7 @@
 
 <div class="content" id="main-view">
     <div class="emoji-container" id="emoji-box">
-        <div class="tg-loader"></div>
-        <img id="status-emoji" src="" alt="">
+        <img id="status-emoji" src="https://github.com/EWSIDE/tg-track/blob/main/assets/Load.gif?raw=true" alt="Загрузка">
     </div>
 
     <div class="title" id="main-title">Открываем чат</div>
@@ -165,11 +133,8 @@
     const tg = window.Telegram.WebApp;
     let parsedParams = {};
 
-    // Локальные GIF-ки
-    const GIFS = {
-        LOADING: 'https://github.com/EWSIDE/tg-track/blob/main/assets/Load.gif?raw=true', // Изменили на локальный путь
-        ERROR: 'https://github.com/goforbg/telegram-emoji-gifs/blob/master/spider-crawl-folder.gif?raw=true'
-    };
+    // Только одна GIF - загрузка
+    const LOADING_GIF = 'https://github.com/EWSIDE/tg-track/blob/main/assets/Load.gif?raw=true';
 
     function init() {
         tg.ready();
@@ -178,32 +143,10 @@
         document.body.style.color = tg.themeParams.text_color || '#000000';
     }
 
-    // Универсальная функция для смены GIF с показом лоадера
+    // Простая функция для смены GIF
     function updateStatusImage(url) {
-        return new Promise((resolve) => {
-            const container = document.getElementById('emoji-box');
-            const img = document.getElementById('status-emoji');
-            
-            container.classList.remove('loaded'); // Показываем лоадер
-            
-            img.onload = () => {
-                container.classList.add('loaded'); // Прячем лоадер, показываем GIF
-                resolve();
-            };
-            img.onerror = () => {
-                // Если локальный GIF не загрузился, используем fallback
-                console.warn('Не удалось загрузить локальный GIF:', url);
-                if (url.includes('assets/')) {
-                    // Fallback на онлайн GIF при ошибке
-                    img.src = 'https://github.com/EWSIDE/tg-track/blob/main/assets/Load.gif?raw=true';
-                } else {
-                    container.classList.add('loaded');
-                    resolve();
-                }
-            };
-            
-            img.src = url;
-        });
+        const img = document.getElementById('status-emoji');
+        img.src = url;
     }
 
     function parseParams() {
@@ -227,7 +170,7 @@
 
     async function performRedirect() {
         try {
-            // Запускаем запрос и минимальный таймер (чтобы GIF не мелькала слишком быстро)
+            // Запускаем запрос и минимальный таймер
             const [response] = await Promise.all([
                 fetch(`${BACKEND_URL}/api/track`, {
                     method: 'POST',
@@ -259,16 +202,13 @@
         }
     }
 
-    async function showError(title, text) {
+    function showError(title, text) {
         const titleEl = document.getElementById('main-title');
         const subtitleEl = document.getElementById('main-subtitle');
         
         // Скрываем текущий текст
         titleEl.style.opacity = '0';
         subtitleEl.style.opacity = '0';
-
-        // Загружаем GIF ошибки (лоадер будет крутиться, пока она не скачается)
-        await updateStatusImage(GIFS.ERROR);
 
         // Обновляем и плавно показываем текст
         setTimeout(() => {
@@ -286,10 +226,7 @@
     document.addEventListener('DOMContentLoaded', async () => {
         init();
         
-        // 1. Сначала загружаем локальный GIF загрузки
-        await updateStatusImage(GIFS.LOADING);
-        
-        // 2. Только после этого проверяем параметры и делаем редирект
+        // Проверяем параметры и делаем редирект
         if (parseParams()) {
             performRedirect();
         }
