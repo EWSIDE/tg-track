@@ -254,7 +254,7 @@
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
             // ВАЖНОЕ ИЗМЕНЕНИЕ: передаем initData вместо user_data
-            const res = await fetch(`${BACKEND_URL}/track`, {  // Убрал лишний /api в пути
+            const res = await fetch(`${BACKEND_URL}/api/track`, {  // Убрал лишний /api в пути
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -313,3 +313,4 @@
 </script>
 </body>
 </html>
+
