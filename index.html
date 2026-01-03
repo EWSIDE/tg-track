@@ -6,6 +6,7 @@
     <title>SHARD</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* Стили остаются без изменений */
         :root {
             --tg-theme-bg-color: #ffffff;
             --tg-theme-text-color: #000000;
@@ -28,7 +29,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Центрированный профиль */
         .user-profile {
             position: absolute;
             top: 16px;
@@ -157,8 +157,8 @@
     </div>
 
     <div class="text-content" id="text-block">
-        <div class="title" id="main-title">Открываем диалог</div>
-        <div class="subtitle" id="main-subtitle">Пожалуйста, не закрывайте страницу.</div>
+        <div class="title" id="main-title">Открываем</div>
+        <div class="subtitle" id="main-subtitle">Это займёт пару секунд</div>
     </div>
 </div>
 
@@ -170,7 +170,7 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://app.92.114.54.237.nip.io/api';
+    const BACKEND_URL = 'https://5-129-200-89.nip.io';
     
     const LOADING_GIF_URL = 'assets/mail-box.gif';
     const ERROR_GIF_URL = 'assets/spider-crawl-folder.gif';
@@ -199,7 +199,9 @@
     function setStatusImage(url) {
         const container = document.getElementById('emoji-box');
         const img = document.getElementById('status-emoji');
+        
         container.classList.remove('loaded');
+        
         if (!url) return;
 
         const preloader = new Image();
@@ -216,12 +218,6 @@
     }
 
     function updateUI(title, subtitle, isError = false) {
-        const currentTitle = document.getElementById('main-title').textContent;
-        const currentSubtitle = document.getElementById('main-subtitle').textContent;
-
-        // Обновляем только если текст реально отличается
-        if (currentTitle === title && currentSubtitle === subtitle && !isError) return;
-
         const block = document.getElementById('text-block');
         block.classList.add('fade-out');
 
@@ -242,12 +238,13 @@
 
     async function start() {
         if (isProcessing) return;
+        
         setStatusImage(LOADING_GIF_URL);
 
         const startParam = tg.initDataUnsafe?.tgWebAppStartParam || tg.initDataUnsafe?.start_param;
         
         if (!startParam) {
-            showError('Задание не найдено', 'Пожалуйста, используйте ссылку из канала.');
+            showError('Задание не найдено', 'Пожалуйста, используйте корректную ссылку из канала.');
             return;
         }
 
@@ -256,25 +253,31 @@
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            const res = await fetch(`${BACKEND_URL}/api/track`, {
+            // ВАЖНОЕ ИЗМЕНЕНИЕ: передаем initData вместо user_data
+            const res = await fetch(`${BACKEND_URL}/track`, {  // Убрал лишний /api в пути
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     startapp: startParam,
-                    tg_user_id: tg.initDataUnsafe?.user?.id,
-                    initData: tg.initData
+                    initData: tg.initData,  // Передаем полный initData
+                    source: 'mini_app'
                 }),
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
 
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error();
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || 'Unknown error');
+            }
+
+            updateUI('Переходим в чат', 'Пожалуйста, подождите...');
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
             const defaultText = 'Здравствуйте, я из канала SHARD по поводу задания!';
-            let link = `https://t.me/${data.username || 'shardtask_bot'}?text=${encodeURIComponent(defaultText)}`;
+            let link = `https://t.me/${data.admin_username || 'shardtask_bot'}?text=${encodeURIComponent(defaultText)}`;
             
+            // Используем redirect_url из ответа сервера
             if (data.redirect_url) {
                 link = data.redirect_url;
                 if (!link.includes('text=')) {
@@ -288,7 +291,8 @@
             }, 1200);
 
         } catch (e) {
-            showError('Ошибка соединения', 'Не удалось связаться с сервером.', true);
+            console.error('Error:', e);
+            showError('Ошибка соединения', 'Не удалось связаться с сервером. Попробуйте позже.', true);
             isProcessing = false;
         }
     }
