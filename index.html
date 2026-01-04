@@ -170,10 +170,11 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://5-129-200-89.nip.io';
+    const BACKEND_URL = 'https://5-129-200-89.nip.io'; // Без /api на конце
     
     const LOADING_GIF_URL = 'assets/mail-box.gif';
     const ERROR_GIF_URL = 'assets/spider-crawl-folder.gif';
+    const BAN_GIF_URL = 'assets/tear-drop.gif';
 
     let isProcessing = false;
 
@@ -253,36 +254,91 @@
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            // ВАЖНОЕ ИЗМЕНЕНИЕ: передаем initData вместо user_data
-            const res = await fetch(`${BACKEND_URL}/track`, {  // Убрал лишний /api в пути
+            // АДАПТАЦИЯ ПОД НОВЫЙ СЕРВЕР:
+            // Парсим startapp параметр чтобы получить post_id
+            const parts = startParam.split('_');
+            let postId = null;
+            
+            if (parts.length >= 2) {
+                try {
+                    postId = parseInt(parts[0]);
+                } catch (e) {
+                    console.error('Error parsing startapp param:', e);
+                }
+            }
+            
+            if (!postId) {
+                throw new Error('Invalid startapp parameter');
+            }
+
+            // ВАЖНО: Теперь отправляем только post_id и initData
+            const res = await fetch(`${BACKEND_URL}/track`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    startapp: startParam,
-                    initData: tg.initData,  // Передаем полный initData
+                    post_id: postId, // Отправляем только post_id
+                    initData: tg.initData, // Передаем полный initData
                     source: 'mini_app'
                 }),
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
 
+            // Проверяем статус ответа
+            if (res.status === 403) {
+                // IP заблокирован
+                const errorData = await res.json();
+                showBanError();
+                isProcessing = false;
+                return;
+            }
+            
+            if (res.status === 404) {
+                // Пост не найден
+                const errorData = await res.json();
+                showError('Задание не найдено', 'Пост с таким ID не существует или был удален.');
+                isProcessing = false;
+                return;
+            }
+            
+            if (res.status === 410) {
+                // Пост не активен
+                const errorData = await res.json();
+                showError('Задание не активно', 'Это задание больше не доступно.');
+                isProcessing = false;
+                return;
+            }
+
             const data = await res.json();
+            
             if (!res.ok || !data.success) {
                 throw new Error(data.error || 'Unknown error');
             }
 
+            // Успешный ответ
             updateUI('Переходим в чат', 'Пожалуйста, подождите...');
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
             const defaultText = 'Здравствуйте, я из канала SHARD по поводу задания!';
-            let link = `https://t.me/${data.admin_username || 'shardtask_bot'}?text=${encodeURIComponent(defaultText)}`;
+            let link = null;
             
-            // Используем redirect_url из ответа сервера
+            // Используем redirect_url из ответа сервера, если есть
             if (data.redirect_url) {
                 link = data.redirect_url;
                 if (!link.includes('text=')) {
                     link += (link.includes('?') ? '&' : '?') + `text=${encodeURIComponent(defaultText)}`;
                 }
+            } 
+            // Если нет redirect_url, но есть admin_username
+            else if (data.post_info?.admin_username) {
+                const username = data.post_info.admin_username.replace('@', '');
+                link = `https://t.me/${username}?text=${encodeURIComponent(defaultText)}`;
+            }
+            // Если совсем нет данных для редиректа
+            else {
+                showError('Ошибка редиректа', 'Не удалось получить ссылку для перехода.');
+                isProcessing = false;
+                return;
             }
 
             setTimeout(() => {
@@ -292,7 +348,11 @@
 
         } catch (e) {
             console.error('Error:', e);
-            showError('Ошибка соединения', 'Не удалось связаться с сервером. Попробуйте позже.', true);
+            if (e.name === 'AbortError') {
+                showError('Таймаут соединения', 'Сервер не отвечает. Проверьте подключение к интернету.', true);
+            } else {
+                showError('Ошибка соединения', 'Не удалось связаться с сервером. Попробуйте позже.', true);
+            }
             isProcessing = false;
         }
     }
@@ -300,6 +360,15 @@
     function showError(t, s, retry = true) {
         setStatusImage(ERROR_GIF_URL);
         updateUI(t, s, retry);
+    }
+
+    function showBanError() {
+        setStatusImage(BAN_GIF_URL);
+        updateUI(
+            'Ваш IP заблокирован', 
+            'Возможно, у вас включен VPN, попробуйте его отключить. Если это не поможет, вероятно, вы заблокированы владельцем канала.', 
+            true
+        );
     }
 
     function retryRedirect() {
