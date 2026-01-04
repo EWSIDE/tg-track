@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SATURN</title>
+    <title>SHARD</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -12,7 +12,7 @@
             --tg-theme-hint-color: #8e8e93;
             --tg-theme-button-color: #3390ec;
             --tg-theme-button-text-color: #ffffff;
-            --tg-theme-destructive-text-color: #ff3b30;
+            --tg-theme-secondary-bg-color: #f2f2f7;
             --smooth: cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
@@ -28,35 +28,6 @@
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
         }
-
-        .user-profile {
-            position: absolute;
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 10px;
-            z-index: 10;
-            white-space: nowrap;
-        }
-        
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--tg-theme-button-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 500;
-            overflow: hidden;
-        }
-        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .user-name { font-size: 14px; font-weight: 500; opacity: 0.9; }
 
         .content {
             flex: 1;
@@ -114,9 +85,8 @@
 
         .text-content { 
             min-height: 80px; 
-            text-align: center;
-            max-width: 320px;
-            margin: 0 auto;
+            text-align: center; 
+            margin-bottom: 20px;
         }
         .title { 
             font-size: 20px; 
@@ -128,22 +98,8 @@
             font-size: 15px; 
             color: var(--tg-theme-hint-color); 
             line-height: 1.4; 
-            font-weight: 400;
-            margin-bottom: 8px;
-        }
-        .error-subtitle {
-            color: var(--tg-theme-destructive-text-color);
-            font-size: 14px;
-            line-height: 1.3;
-            opacity: 0.8;
-        }
-        .contact-info {
-            font-size: 14px;
-            color: var(--tg-theme-button-color);
-            text-decoration: none;
-            margin-top: 12px;
-            display: inline-block;
-            font-weight: 500;
+            max-width: 250px; 
+            font-weight: 400; 
         }
 
         .fade-out { opacity: 0; transform: translateY(10px); transition: 0.3s var(--smooth); }
@@ -160,7 +116,7 @@
 
         .footer.visible { opacity: 1; visibility: visible; transform: translateY(0); }
 
-        .tg-main-button {
+        .tg-button {
             width: 100%;
             height: 54px;
             border: none;
@@ -170,27 +126,11 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s ease;
+            transition: opacity 0.2s;
         }
-        .tg-main-button:active {
-            background-color: color-mix(in srgb, var(--tg-theme-button-color) 80%, black);
-        }
-        
-        .back-button {
-            width: 100%;
-            height: 54px;
-            border: 2px solid var(--tg-theme-button-color);
-            border-radius: 14px;
-            background: transparent;
-            color: var(--tg-theme-button-color);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 12px;
-            transition: all 0.2s ease;
-        }
-        .back-button:active {
-            background-color: color-mix(in srgb, var(--tg-theme-button-color) 10%, transparent);
+
+        .tg-button:active {
+            opacity: 0.8;
         }
 
         /* Стили для страницы блокировки */
@@ -201,75 +141,57 @@
             justify-content: center;
             padding: 24px;
             text-align: center;
-            flex: 1;
         }
-        
-        .blocked-emoji {
-            width: 160px;
-            height: 160px;
-            margin-bottom: 32px;
-            object-fit: contain;
+
+        .blocked-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 36px;
         }
-        
+
         .blocked-title {
             font-size: 22px;
             font-weight: 600;
             margin-bottom: 12px;
-            color: var(--tg-theme-destructive-text-color);
+            letter-spacing: -0.3px;
         }
-        
-        .blocked-message {
-            font-size: 16px;
-            color: var(--tg-theme-text-color);
-            line-height: 1.5;
-            margin-bottom: 16px;
-            max-width: 300px;
-        }
-        
-        .blocked-reason {
-            font-size: 14px;
+
+        .blocked-subtitle {
+            font-size: 15px;
             color: var(--tg-theme-hint-color);
-            margin-bottom: 8px;
-            padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 8px;
+            line-height: 1.4;
+            max-width: 280px;
+            margin-bottom: 32px;
+            font-weight: 400;
         }
-        
-        .blocked-actions {
+
+        .support-button {
             width: 100%;
-            max-width: 300px;
-            margin-top: 24px;
-        }
-        
-        .contact-button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
+            max-width: 280px;
             height: 54px;
+            border: none;
             border-radius: 14px;
             background: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
             font-size: 16px;
             font-weight: 600;
-            text-decoration: none;
-            margin-top: 16px;
+            cursor: pointer;
+            transition: opacity 0.2s;
         }
-        
-        .hidden {
-            display: none !important;
+
+        .support-button:active {
+            opacity: 0.8;
         }
     </style>
 </head>
 <body>
 
-<div class="user-profile" id="user-profile" style="display: none;">
-    <div class="user-avatar" id="user-avatar"></div>
-    <div class="user-name" id="user-name"></div>
-</div>
-
-<!-- Основной контент -->
 <div class="content" id="main-view">
     <div class="emoji-container" id="emoji-box">
         <div class="tg-loader" id="spinner"></div>
@@ -282,34 +204,10 @@
     </div>
 </div>
 
-<!-- Футер с кнопками -->
 <div class="footer" id="footer">
-    <button class="tg-main-button" onclick="retryRedirect()" id="retry-button">
+    <button class="tg-button" onclick="retryRedirect()">
         Попробовать снова
     </button>
-    <button class="back-button" onclick="goToChannel()" id="back-button">
-        Вернуться в канал
-    </button>
-</div>
-
-<!-- Страница блокировки -->
-<div class="blocked-container hidden" id="blocked-view">
-    <img src="assets/x.gif" alt="Заблокировано" class="blocked-emoji" id="blocked-emoji">
-    <div class="blocked-title" id="blocked-title">Ваш IP заблокирован</div>
-    <div class="blocked-message" id="blocked-message">
-        Возможно у вас включен VPN, советую выключить его. Если не помогло, то решением владельца вы заблокированы в нашем канале.
-    </div>
-    <div class="blocked-reason" id="blocked-reason">
-        Причина: <span id="reason-text">Административная блокировка</span>
-    </div>
-    <div class="blocked-actions">
-        <button class="tg-main-button" onclick="checkConnection()" id="check-vpn-button">
-            Проверить подключение
-        </button>
-        <a href="https://t.me/shardlightspace" class="contact-button" target="_blank">
-            Обратиться в поддержку
-        </a>
-    </div>
 </div>
 
 <script>
@@ -318,29 +216,15 @@
     
     const LOADING_GIF_URL = 'assets/mail-box.gif';
     const ERROR_GIF_URL = 'assets/spider-crawl-folder.gif';
-    const BLOCKED_GIF_URL = 'assets/x.gif';
+    const BLOCKED_GIF_URL = 'assets/spider-crawl-folder.gif';
 
     let isProcessing = false;
-    let blockedReason = 'Административная блокировка';
-    let blockedIP = '';
 
     function init() {
         tg.ready();
         tg.expand();
         
         document.body.style.background = tg.themeParams.bg_color || '#ffffff';
-        
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-            document.getElementById('user-profile').style.display = 'flex';
-            document.getElementById('user-name').textContent = user.first_name;
-            const av = document.getElementById('user-avatar');
-            if (user.photo_url) {
-                av.innerHTML = `<img src="${user.photo_url}" alt="">`;
-            } else {
-                av.textContent = user.first_name.charAt(0).toUpperCase();
-            }
-        }
     }
 
     function setStatusImage(url) {
@@ -359,7 +243,6 @@
             }, 50);
         };
         preloader.onerror = () => {
-            console.error('Failed to load image:', url);
             container.classList.add('loaded');
         };
         preloader.src = url;
@@ -384,42 +267,35 @@
         }, 300);
     }
 
-    function showBlockedPage() {
-        // Скрываем основной контент
-        document.getElementById('main-view').classList.add('hidden');
-        document.getElementById('footer').classList.add('hidden');
+    function showBlockedScreen(errorMessage = 'Доступ ограничен') {
+        // Сохраняем оригинальный контент
+        const mainView = document.getElementById('main-view');
+        const originalHTML = mainView.innerHTML;
         
-        // Показываем страницу блокировки
-        const blockedView = document.getElementById('blocked-view');
-        blockedView.classList.remove('hidden');
+        // Создаем экран блокировки
+        mainView.innerHTML = `
+            <div class="blocked-container">
+                <div class="blocked-icon">🚫</div>
+                <div class="blocked-title">Доступ ограничен</div>
+                <div class="blocked-subtitle">${errorMessage}</div>
+                <button class="support-button" onclick="contactSupport()">
+                    Обратиться в поддержку
+                </button>
+            </div>
+        `;
         
-        // Устанавливаем причину блокировки
-        document.getElementById('reason-text').textContent = blockedReason;
+        // Убираем подвал с кнопкой "Попробовать снова"
+        document.getElementById('footer').classList.remove('visible');
         
-        // Добавляем информацию об IP если есть
-        if (blockedIP) {
-            const reasonElement = document.getElementById('blocked-reason');
-            reasonElement.innerHTML = `Заблокирован IP: <strong>${blockedIP}</strong><br>Причина: <span id="reason-text">${blockedReason}</span>`;
-        }
-        
-        // Устанавливаем GIF для блокировки
-        const blockedEmoji = document.getElementById('blocked-emoji');
-        const preloader = new Image();
-        preloader.onload = () => {
-            blockedEmoji.src = BLOCKED_GIF_URL;
-        };
-        preloader.onerror = () => {
-            console.error('Failed to load blocked GIF');
-            // Можно установить fallback emoji
-            blockedEmoji.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 24 24"><path fill="%23ff3b30" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>';
-        };
-        preloader.src = BLOCKED_GIF_URL;
-        
-        // Вибрация для уведомления
+        // Добавляем вибрацию
         if (tg.HapticFeedback) {
             tg.HapticFeedback.notificationOccurred('error');
-            setTimeout(() => tg.HapticFeedback.impactOccurred('heavy'), 200);
         }
+    }
+
+    function contactSupport() {
+        const supportLink = `https://t.me/shardtask_bot`;
+        tg.openTelegramLink(supportLink);
     }
 
     async function start() {
@@ -430,7 +306,7 @@
         const startParam = tg.initDataUnsafe?.tgWebAppStartParam || tg.initDataUnsafe?.start_param;
         
         if (!startParam) {
-            showError('Задание не найдено', 'Пожалуйста, используйте корректную ссылку из канала.');
+            showBlockedScreen('Пожалуйста, используйте корректную ссылку из канала.');
             return;
         }
 
@@ -453,15 +329,13 @@
 
             const data = await res.json();
             
-            // Проверяем, заблокирован ли IP
-            if (res.status === 403 && data.error === 'IP address is blocked') {
-                blockedIP = data.blocked_ip || 'неизвестен';
-                blockedReason = data.reason || 'Административная блокировка';
-                showBlockedPage();
+            // Проверяем статус пользователя
+            if (data.status === 'blocked' || !data.success) {
+                showBlockedScreen(data.error || 'Ваш доступ был ограничен');
                 isProcessing = false;
                 return;
             }
-            
+
             if (!res.ok || !data.success) {
                 throw new Error(data.error || 'Unknown error');
             }
@@ -469,7 +343,7 @@
             updateUI('Переходим в чат', 'Пожалуйста, подождите...');
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
-            const defaultText = 'Здравствуйте, я из канала SATURN по поводу задания!';
+            const defaultText = 'Здравствуйте, я из канала SHARD по поводу задания!';
             let link = `https://t.me/${data.admin_username || 'shardtask_bot'}?text=${encodeURIComponent(defaultText)}`;
             
             if (data.redirect_url) {
@@ -486,15 +360,7 @@
 
         } catch (e) {
             console.error('Error:', e);
-            
-            // Проверяем, не является ли ошибка связанной с заблокированным IP
-            if (e.message.includes('blocked') || e.message.includes('403')) {
-                blockedReason = 'Обнаружена блокировка сети';
-                showBlockedPage();
-            } else {
-                showError('Ошибка соединения', 'Не удалось связаться с сервером. Попробуйте позже.', true);
-            }
-            
+            showBlockedScreen('Не удалось связаться с сервером. Попробуйте позже.');
             isProcessing = false;
         }
     }
@@ -505,60 +371,13 @@
     }
 
     function retryRedirect() {
-        // Сброс состояния и повторная попытка
-        document.getElementById('footer').classList.remove('visible');
-        document.getElementById('blocked-view').classList.add('hidden');
-        document.getElementById('main-view').classList.remove('hidden');
-        document.getElementById('main-view').style.opacity = '1';
-        
-        setTimeout(() => {
-            start();
-        }, 300);
-    }
-
-    function goToChannel() {
-        tg.openTelegramLink('https://t.me/+Mytwy6ECXfBlMDNi');
-    }
-
-    function checkConnection() {
-        // Простая проверка подключения
-        updateUI('Проверяем подключение', 'Ищем возможные проблемы...');
-        
-        setTimeout(() => {
-            // Здесь можно добавить более сложную логику проверки VPN
-            const hasVPN = Math.random() > 0.5; // Заглушка для примера
-            
-            if (hasVPN) {
-                document.getElementById('blocked-message').innerHTML = 
-                    'Обнаружено VPN-подключение. Пожалуйста:<br><br>' +
-                    '1. Отключите VPN в настройках<br>' +
-                    '2. Перезагрузите приложение<br>' +
-                    '3. Попробуйте снова';
-            } else {
-                document.getElementById('blocked-message').innerHTML = 
-                    'VPN не обнаружен. Возможно, ваш IP был заблокирован администратором.<br><br>' +
-                    'Обратитесь в поддержку для разблокировки.';
-            }
-            
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-        }, 1500);
-    }
-
-    function hideBlockedPage() {
-        document.getElementById('blocked-view').classList.add('hidden');
-        document.getElementById('main-view').classList.remove('hidden');
+        window.location.reload();
     }
 
     window.onload = () => {
         init();
-        
-        // Предзагрузка GIF для блокировки
-        const preloadGif = new Image();
-        preloadGif.src = BLOCKED_GIF_URL;
-        
         setTimeout(start, 400);
     };
 </script>
 </body>
 </html>
-
