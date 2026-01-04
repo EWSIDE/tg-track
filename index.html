@@ -6,13 +6,13 @@
     <title>SHARD</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* Стили остаются без изменений */
         :root {
             --tg-theme-bg-color: #ffffff;
             --tg-theme-text-color: #000000;
             --tg-theme-hint-color: #8e8e93;
             --tg-theme-button-color: #3390ec;
             --tg-theme-button-text-color: #ffffff;
-            --tg-theme-secondary-bg-color: #f2f2f7;
             --smooth: cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
@@ -28,6 +28,35 @@
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
         }
+
+        .user-profile {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+            white-space: nowrap;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--tg-theme-button-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 500;
+            overflow: hidden;
+        }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .user-name { font-size: 14px; font-weight: 500; opacity: 0.9; }
 
         .content {
             flex: 1;
@@ -83,24 +112,9 @@
             visibility: hidden;
         }
 
-        .text-content { 
-            min-height: 80px; 
-            text-align: center; 
-            margin-bottom: 20px;
-        }
-        .title { 
-            font-size: 20px; 
-            font-weight: 500; 
-            margin-bottom: 8px; 
-            letter-spacing: -0.3px; 
-        }
-        .subtitle { 
-            font-size: 15px; 
-            color: var(--tg-theme-hint-color); 
-            line-height: 1.4; 
-            max-width: 250px; 
-            font-weight: 400; 
-        }
+        .text-content { min-height: 80px; text-align: center; }
+        .title { font-size: 20px; font-weight: 500; margin-bottom: 8px; letter-spacing: -0.3px; }
+        .subtitle { font-size: 15px; color: var(--tg-theme-hint-color); line-height: 1.4; max-width: 250px; font-weight: 400; }
 
         .fade-out { opacity: 0; transform: translateY(10px); transition: 0.3s var(--smooth); }
 
@@ -116,7 +130,7 @@
 
         .footer.visible { opacity: 1; visibility: visible; transform: translateY(0); }
 
-        .tg-button {
+        .tg-main-button {
             width: 100%;
             height: 54px;
             border: none;
@@ -126,71 +140,15 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .tg-button:active {
-            opacity: 0.8;
-        }
-
-        /* Стили для страницы блокировки */
-        .blocked-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            text-align: center;
-        }
-
-        .blocked-icon {
-            width: 80px;
-            height: 80px;
-            background: var(--tg-theme-secondary-bg-color);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            font-size: 36px;
-        }
-
-        .blocked-title {
-            font-size: 22px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            letter-spacing: -0.3px;
-        }
-
-        .blocked-subtitle {
-            font-size: 15px;
-            color: var(--tg-theme-hint-color);
-            line-height: 1.4;
-            max-width: 280px;
-            margin-bottom: 32px;
-            font-weight: 400;
-        }
-
-        .support-button {
-            width: 100%;
-            max-width: 280px;
-            height: 54px;
-            border: none;
-            border-radius: 14px;
-            background: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .support-button:active {
-            opacity: 0.8;
         }
     </style>
 </head>
 <body>
+
+<div class="user-profile" id="user-profile" style="display: none;">
+    <div class="user-avatar" id="user-avatar"></div>
+    <div class="user-name" id="user-name"></div>
+</div>
 
 <div class="content" id="main-view">
     <div class="emoji-container" id="emoji-box">
@@ -205,7 +163,7 @@
 </div>
 
 <div class="footer" id="footer">
-    <button class="tg-button" onclick="retryRedirect()">
+    <button class="tg-main-button" onclick="retryRedirect()">
         Попробовать снова
     </button>
 </div>
@@ -216,7 +174,6 @@
     
     const LOADING_GIF_URL = 'assets/mail-box.gif';
     const ERROR_GIF_URL = 'assets/spider-crawl-folder.gif';
-    const BLOCKED_GIF_URL = 'assets/spider-crawl-folder.gif';
 
     let isProcessing = false;
 
@@ -225,6 +182,18 @@
         tg.expand();
         
         document.body.style.background = tg.themeParams.bg_color || '#ffffff';
+        
+        const user = tg.initDataUnsafe?.user;
+        if (user) {
+            document.getElementById('user-profile').style.display = 'flex';
+            document.getElementById('user-name').textContent = user.first_name;
+            const av = document.getElementById('user-avatar');
+            if (user.photo_url) {
+                av.innerHTML = `<img src="${user.photo_url}" alt="">`;
+            } else {
+                av.textContent = user.first_name.charAt(0).toUpperCase();
+            }
+        }
     }
 
     function setStatusImage(url) {
@@ -267,37 +236,6 @@
         }, 300);
     }
 
-    function showBlockedScreen(errorMessage = 'Доступ ограничен') {
-        // Сохраняем оригинальный контент
-        const mainView = document.getElementById('main-view');
-        const originalHTML = mainView.innerHTML;
-        
-        // Создаем экран блокировки
-        mainView.innerHTML = `
-            <div class="blocked-container">
-                <div class="blocked-icon">🚫</div>
-                <div class="blocked-title">Доступ ограничен</div>
-                <div class="blocked-subtitle">${errorMessage}</div>
-                <button class="support-button" onclick="contactSupport()">
-                    Обратиться в поддержку
-                </button>
-            </div>
-        `;
-        
-        // Убираем подвал с кнопкой "Попробовать снова"
-        document.getElementById('footer').classList.remove('visible');
-        
-        // Добавляем вибрацию
-        if (tg.HapticFeedback) {
-            tg.HapticFeedback.notificationOccurred('error');
-        }
-    }
-
-    function contactSupport() {
-        const supportLink = `https://t.me/shardtask_bot`;
-        tg.openTelegramLink(supportLink);
-    }
-
     async function start() {
         if (isProcessing) return;
         
@@ -306,7 +244,7 @@
         const startParam = tg.initDataUnsafe?.tgWebAppStartParam || tg.initDataUnsafe?.start_param;
         
         if (!startParam) {
-            showBlockedScreen('Пожалуйста, используйте корректную ссылку из канала.');
+            showError('Задание не найдено', 'Пожалуйста, используйте корректную ссылку из канала.');
             return;
         }
 
@@ -315,12 +253,13 @@
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            const res = await fetch(`${BACKEND_URL}/track`, {
+            // ВАЖНОЕ ИЗМЕНЕНИЕ: передаем initData вместо user_data
+            const res = await fetch(`${BACKEND_URL}/track`, {  // Убрал лишний /api в пути
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     startapp: startParam,
-                    initData: tg.initData,
+                    initData: tg.initData,  // Передаем полный initData
                     source: 'mini_app'
                 }),
                 signal: controller.signal
@@ -328,14 +267,6 @@
             clearTimeout(timeoutId);
 
             const data = await res.json();
-            
-            // Проверяем статус пользователя
-            if (data.status === 'blocked' || !data.success) {
-                showBlockedScreen(data.error || 'Ваш доступ был ограничен');
-                isProcessing = false;
-                return;
-            }
-
             if (!res.ok || !data.success) {
                 throw new Error(data.error || 'Unknown error');
             }
@@ -346,6 +277,7 @@
             const defaultText = 'Здравствуйте, я из канала SHARD по поводу задания!';
             let link = `https://t.me/${data.admin_username || 'shardtask_bot'}?text=${encodeURIComponent(defaultText)}`;
             
+            // Используем redirect_url из ответа сервера
             if (data.redirect_url) {
                 link = data.redirect_url;
                 if (!link.includes('text=')) {
@@ -360,7 +292,7 @@
 
         } catch (e) {
             console.error('Error:', e);
-            showBlockedScreen('Не удалось связаться с сервером. Попробуйте позже.');
+            showError('Ошибка соединения', 'Не удалось связаться с сервером. Попробуйте позже.', true);
             isProcessing = false;
         }
     }
