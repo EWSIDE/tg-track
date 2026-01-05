@@ -329,9 +329,14 @@
                     link += (link.includes('?') ? '&' : '?') + `text=${encodeURIComponent(defaultText)}`;
                 }
             } 
-            // Если нет redirect_url, но есть admin_username
+            // Если нет redirect_url, но есть admin_username в post_info
             else if (data.post_info?.admin_username) {
                 const username = data.post_info.admin_username.replace('@', '');
+                link = `https://t.me/${username}?text=${encodeURIComponent(defaultText)}`;
+            }
+            // Если есть admin_username в корне ответа (для дубликатов)
+            else if (data.admin_username) {
+                const username = data.admin_username.replace('@', '');
                 link = `https://t.me/${username}?text=${encodeURIComponent(defaultText)}`;
             }
             // Если совсем нет данных для редиректа
