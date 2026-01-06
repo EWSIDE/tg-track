@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SHARD</title>
+    <title>SATURN</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         /* Стили остаются без изменений */
@@ -170,7 +170,7 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://5-129-200-89.nip.io'; // Без /api на конце
+    const BACKEND_URL = 'https://api-saturn.ru';
     
     const LOADING_GIF_URL = 'assets/mail-box.gif';
     const ERROR_GIF_URL = 'assets/spider-crawl-folder.gif';
@@ -319,7 +319,7 @@
             updateUI('Переходим в чат', 'Пожалуйста, подождите...');
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
-            const defaultText = 'Здравствуйте, я из канала SHARD по поводу задания!';
+            const defaultText = 'Здравствуйте, я из канала SATURN по поводу задания!';
             let link = null;
             
             // Используем redirect_url из ответа сервера, если есть
