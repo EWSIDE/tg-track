@@ -1,384 +1,213 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SATURN</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        /* Стили остаются без изменений */
-        :root {
-            --tg-theme-bg-color: #ffffff;
-            --tg-theme-text-color: #000000;
-            --tg-theme-hint-color: #8e8e93;
-            --tg-theme-button-color: #3390ec;
-            --tg-theme-button-text-color: #ffffff;
-            --smooth: cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SATURN</title>
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
+<style>
+:root {
+  --bg: var(--tg-theme-bg-color, #ffffff);
+  --text: var(--tg-theme-text-color, #000000);
+  --hint: var(--tg-theme-hint-color, #8e8e93);
+  --button: var(--tg-theme-button-color, #3390ec);
+  --button-text: var(--tg-theme-button-text-color, #ffffff);
+}
 
-        .user-profile {
-            position: absolute;
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 10px;
-            z-index: 10;
-            white-space: nowrap;
-        }
-        
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--tg-theme-button-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 500;
-            overflow: hidden;
-        }
-        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .user-name { font-size: 14px; font-weight: 500; opacity: 0.9; }
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
 
-        .content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            transition: opacity 0.5s ease;
-        }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+               "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  -webkit-font-smoothing: antialiased;
+}
 
-        .emoji-container {
-            width: 140px;
-            height: 140px;
-            margin-bottom: 24px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+/* Header user */
+.user-profile {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: .9;
+}
 
-        .tg-loader {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(0, 0, 0, 0.05);
-            border-top-color: var(--tg-theme-button-color);
-            border-radius: 50%;
-            animation: spin .9s linear infinite;
-            position: absolute;
-            z-index: 1;
-            transition: opacity 0.3s ease;
-        }
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--button);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
 
-        @keyframes spin { to { transform: rotate(360deg); } }
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-        .status-gif {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            position: relative;
-            z-index: 2;
-            opacity: 0;
-            transform: scale(0.8);
-            transition: all 0.5s var(--smooth);
-        }
+/* Main */
+.content {
+  flex: 1;
+  padding: 24px;
+  padding-top: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
 
-        .emoji-container.loaded .status-gif {
-            opacity: 1;
-            transform: scale(1);
-        }
-        .emoji-container.loaded .tg-loader {
-            opacity: 0;
-            visibility: hidden;
-        }
+/* Emoji / loader */
+.emoji-box {
+  width: 140px;
+  height: 140px;
+  margin-bottom: 20px;
+  position: relative;
+}
 
-        .text-content { min-height: 80px; text-align: center; }
-        .title { font-size: 20px; font-weight: 500; margin-bottom: 8px; letter-spacing: -0.3px; }
-        .subtitle { font-size: 15px; color: var(--tg-theme-hint-color); line-height: 1.4; max-width: 250px; font-weight: 400; }
+.loader {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(0,0,0,.08);
+  border-top-color: var(--button);
+  border-radius: 50%;
+  animation: spin .9s linear infinite;
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
 
-        .fade-out { opacity: 0; transform: translateY(10px); transition: 0.3s var(--smooth); }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-        .footer {
-            padding: 20px;
-            padding-bottom: calc(24px + env(safe-area-inset-bottom));
-            width: 100%;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(20px);
-            transition: all 0.6s var(--smooth);
-        }
+.status-gif {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(.92);
+  transition: .35s ease;
+}
 
-        .footer.visible { opacity: 1; visibility: visible; transform: translateY(0); }
+.loaded .status-gif {
+  opacity: 1;
+  transform: scale(1);
+}
 
-        .tg-main-button {
-            width: 100%;
-            height: 54px;
-            border: none;
-            border-radius: 14px;
-            background: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-    </style>
+.loaded .loader {
+  opacity: 0;
+}
+
+/* Text */
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--hint);
+  line-height: 1.4;
+  max-width: 260px;
+}
+
+/* Footer */
+.footer {
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  opacity: 0;
+  transform: translateY(16px);
+  transition: .35s ease;
+}
+
+.footer.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Telegram Button */
+.tg-btn {
+  width: 100%;
+  height: 50px;
+  border-radius: 14px;
+  border: none;
+  background: var(--button);
+  color: var(--button-text);
+  font-size: 16px;
+  font-weight: 600;
+}
+</style>
 </head>
+
 <body>
 
-<div class="user-profile" id="user-profile" style="display: none;">
-    <div class="user-avatar" id="user-avatar"></div>
-    <div class="user-name" id="user-name"></div>
+<div class="user-profile" id="user-profile" hidden>
+  <div class="user-avatar" id="user-avatar"></div>
+  <div id="user-name"></div>
 </div>
 
-<div class="content" id="main-view">
-    <div class="emoji-container" id="emoji-box">
-        <div class="tg-loader" id="spinner"></div>
-        <img class="status-gif" id="status-emoji" src="" alt="">
-    </div>
+<div class="content" id="main">
+  <div class="emoji-box" id="emoji-box">
+    <div class="loader"></div>
+    <img id="status-emoji" class="status-gif">
+  </div>
 
-    <div class="text-content" id="text-block">
-        <div class="title" id="main-title">Открываем</div>
-        <div class="subtitle" id="main-subtitle">Это займёт пару секунд</div>
-    </div>
+  <div class="title" id="title">Открываем</div>
+  <div class="subtitle" id="subtitle">Это займёт пару секунд</div>
 </div>
 
 <div class="footer" id="footer">
-    <button class="tg-main-button" onclick="retryRedirect()">
-        Попробовать снова
-    </button>
+  <button class="tg-btn" onclick="location.reload()">Попробовать снова</button>
 </div>
 
 <script>
-    const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://api-saturn.ru';
-    
-    const LOADING_GIF_URL = 'assets/mail-box.gif';
-    const ERROR_GIF_URL = 'assets/spider-crawl-folder.gif';
-    const BAN_GIF_URL = 'assets/tear-drop.gif';
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
 
-    let isProcessing = false;
+document.body.style.background = tg.themeParams.bg_color || '#fff';
 
-    function init() {
-        tg.ready();
-        tg.expand();
-        
-        document.body.style.background = tg.themeParams.bg_color || '#ffffff';
-        
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-            document.getElementById('user-profile').style.display = 'flex';
-            document.getElementById('user-name').textContent = user.first_name;
-            const av = document.getElementById('user-avatar');
-            if (user.photo_url) {
-                av.innerHTML = `<img src="${user.photo_url}" alt="">`;
-            } else {
-                av.textContent = user.first_name.charAt(0).toUpperCase();
-            }
-        }
-    }
+const user = tg.initDataUnsafe?.user;
+if (user) {
+  document.getElementById('user-profile').hidden = false;
+  document.getElementById('user-name').textContent = user.first_name;
+  const av = document.getElementById('user-avatar');
+  user.photo_url
+    ? av.innerHTML = `<img src="${user.photo_url}">`
+    : av.textContent = user.first_name[0];
+}
 
-    function setStatusImage(url) {
-        const container = document.getElementById('emoji-box');
-        const img = document.getElementById('status-emoji');
-        
-        container.classList.remove('loaded');
-        
-        if (!url) return;
-
-        const preloader = new Image();
-        preloader.onload = () => {
-            img.src = url;
-            setTimeout(() => {
-                container.classList.add('loaded');
-            }, 50);
-        };
-        preloader.onerror = () => {
-            container.classList.add('loaded');
-        };
-        preloader.src = url;
-    }
-
-    function updateUI(title, subtitle, isError = false) {
-        const block = document.getElementById('text-block');
-        block.classList.add('fade-out');
-
-        setTimeout(() => {
-            document.getElementById('main-title').textContent = title;
-            document.getElementById('main-subtitle').textContent = subtitle;
-            block.classList.remove('fade-out');
-            
-            const footer = document.getElementById('footer');
-            if (isError) {
-                footer.classList.add('visible');
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-            } else {
-                footer.classList.remove('visible');
-            }
-        }, 300);
-    }
-
-    async function start() {
-        if (isProcessing) return;
-        
-        setStatusImage(LOADING_GIF_URL);
-
-        const startParam = tg.initDataUnsafe?.tgWebAppStartParam || tg.initDataUnsafe?.start_param;
-        
-        if (!startParam) {
-            showError('Задание не найдено', 'Пожалуйста, используйте корректную ссылку из канала.');
-            return;
-        }
-
-        isProcessing = true;
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-            // АДАПТАЦИЯ ПОД НОВЫЙ СЕРВЕР:
-            // Парсим startapp параметр чтобы получить post_id
-            const parts = startParam.split('_');
-            let postId = null;
-            
-            if (parts.length >= 2) {
-                try {
-                    postId = parseInt(parts[0]);
-                } catch (e) {
-                    console.error('Error parsing startapp param:', e);
-                }
-            }
-            
-            if (!postId) {
-                throw new Error('Invalid startapp parameter');
-            }
-
-            // ВАЖНО: Теперь отправляем только post_id и initData
-            const res = await fetch(`${BACKEND_URL}/track`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    post_id: postId, // Отправляем только post_id
-                    initData: tg.initData, // Передаем полный initData
-                    source: 'mini_app'
-                }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            // Проверяем статус ответа
-            if (res.status === 403) {
-                // IP заблокирован
-                const errorData = await res.json();
-                showBanError();
-                isProcessing = false;
-                return;
-            }
-            
-            if (res.status === 404) {
-                // Пост не найден
-                const errorData = await res.json();
-                showError('Задание не найдено', 'Пост с таким ID не существует или был удален.');
-                isProcessing = false;
-                return;
-            }
-            
-            if (res.status === 410) {
-                // Пост не активен
-                const errorData = await res.json();
-                showError('Задание не активно', 'Это задание больше не доступно.');
-                isProcessing = false;
-                return;
-            }
-
-            const data = await res.json();
-            
-            if (!res.ok || !data.success) {
-                throw new Error(data.error || 'Unknown error');
-            }
-
-            // Успешный ответ
-            updateUI('Переходим в чат', 'Пожалуйста, подождите...');
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-
-            const defaultText = 'Здравствуйте, я из канала SATURN по поводу задания!';
-            let link = null;
-            
-            // Используем redirect_url из ответа сервера, если есть
-            if (data.redirect_url) {
-                link = data.redirect_url;
-                if (!link.includes('text=')) {
-                    link += (link.includes('?') ? '&' : '?') + `text=${encodeURIComponent(defaultText)}`;
-                }
-            } 
-            // Если нет redirect_url, но есть admin_username
-            else if (data.post_info?.admin_username) {
-                const username = data.post_info.admin_username.replace('@', '');
-                link = `https://t.me/${username}?text=${encodeURIComponent(defaultText)}`;
-            }
-            // Если совсем нет данных для редиректа
-            else {
-                showError('Ошибка редиректа', 'Не удалось получить ссылку для перехода.');
-                isProcessing = false;
-                return;
-            }
-
-            setTimeout(() => {
-                document.getElementById('main-view').style.opacity = '0';
-                setTimeout(() => tg.openTelegramLink(link), 500);
-            }, 1200);
-
-        } catch (e) {
-            console.error('Error:', e);
-            if (e.name === 'AbortError') {
-                showError('Таймаут соединения', 'Сервер не отвечает. Проверьте подключение к интернету.', true);
-            } else {
-                showError('Ошибка соединения', 'Не удалось связаться с сервером. Попробуйте позже.', true);
-            }
-            isProcessing = false;
-        }
-    }
-
-    function showError(t, s, retry = true) {
-        setStatusImage(ERROR_GIF_URL);
-        updateUI(t, s, retry);
-    }
-
-    function showBanError() {
-        setStatusImage(BAN_GIF_URL);
-        updateUI(
-            'Ваш IP заблокирован', 
-            'Возможно, у вас включен VPN, попробуйте его отключить. Если это не поможет, вероятно, вы заблокированы владельцем канала.', 
-            true
-        );
-    }
-
-    function retryRedirect() {
-        window.location.reload();
-    }
-
-    window.onload = () => {
-        init();
-        setTimeout(start, 400);
-    };
+function setImage(src) {
+  const box = document.getElementById('emoji-box');
+  const img = document.getElementById('status-emoji');
+  box.classList.remove('loaded');
+  img.onload = () => box.classList.add('loaded');
+  img.src = src;
+}
 </script>
+
 </body>
 </html>
